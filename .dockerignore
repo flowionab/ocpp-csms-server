@@ -1,0 +1,5 @@
+target/
+.idea/
+docker-compose.yaml
+README.md
+tests/

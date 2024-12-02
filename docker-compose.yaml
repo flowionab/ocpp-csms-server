@@ -1,0 +1,8 @@
+services:
+  csms:
+    build:
+      context: .
+    environment:
+      LOG_LEVEL: info
+    ports:
+      - 3000:3000
