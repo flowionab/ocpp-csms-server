@@ -2,7 +2,7 @@ use poem::{
     http::{HeaderMap, StatusCode},
     Response,
 };
-use tracing::{info, warn};
+use tracing::{warn};
 
 pub fn extract_protocol_header(headers: &HeaderMap) -> Result<String, Response> {
     if let Some(protocol_header) = headers.get("Sec-WebSocket-Protocol") {

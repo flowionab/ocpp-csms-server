@@ -1,11 +1,8 @@
-use opentelemetry::KeyValue;
-use opentelemetry_sdk::Resource;
 use std::env;
 use opentelemetry::trace::TracerProvider;
 use opentelemetry_sdk::trace::Sampler;
 use tracing::debug;
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::registry;

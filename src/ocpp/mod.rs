@@ -6,5 +6,7 @@ mod select_protocol;
 mod validate_protocol;
 mod ocpp_protocol;
 mod handle_message;
+mod extract_password;
 
 pub use self::start_ocpp_server::start_ocpp_server;
+pub use self::ocpp_protocol::OcppProtocol;
