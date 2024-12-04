@@ -9,23 +9,18 @@ use serde_json::Value;
 use tokio::sync::Mutex;
 use tokio::sync::oneshot::Sender;
 use tracing::log::{error, warn};
-use crate::charger::charger_model::ChargerModel;
+use crate::charger::charger_data::ChargerData;
 use crate::charger::ocpp1_6interface::Ocpp1_6Interface;
 use crate::data::DataStore;
 use crate::ocpp::OcppProtocol;
 
 #[derive(Clone)]
 pub struct Charger {
-    pub data_store: Arc<dyn DataStore>,
-
     pub id: String,
+    pub data_store: Arc<dyn DataStore>,
     pub authenticated: bool,
-    pub model: Option<ChargerModel>,
-    pub vendor: Option<String>,
-    pub serial_number: Option<String>,
-    pub firmware_version: Option<String>,
-    pub iccid: Option<String>,
-    pub imsi: Option<String>,
+
+    pub data: ChargerData,
 
     pub password: Option<String>,
 
@@ -36,22 +31,24 @@ pub struct Charger {
 }
 
 impl Charger {
-    pub fn new(id: &str, data_store: Arc<dyn DataStore>, message_queue: Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>) -> Self {
-        Self {
+    pub async fn setup(id: &str, data_store: Arc<dyn DataStore>, message_queue: Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>) -> Result<Self, Response> {
+        let data = data_store.get_charger_data_by_id(id).await.map_err(|_e| {
+            error!("Could not retrieve charger data");
+            Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body(
+                "Could not retrieve charger data".to_string(),
+            )
+        })?;
+
+        Ok(Self {
             data_store,
             id: id.to_string(),
             authenticated: false,
-            model: None,
-            vendor: None,
-            serial_number: None,
-            firmware_version: None,
-            iccid: None,
-            imsi: None,
+            data: data.unwrap_or_default(),
             password: None,
             protocol: None,
             sink: None,
             message_queue
-        }
+        })
     }
 
     pub fn set_protocol(&mut self, protocol: OcppProtocol) {
@@ -60,6 +57,11 @@ impl Charger {
 
     pub fn attach_sink(&mut self, sink: Arc<Mutex<SplitSink<WebSocketStream, Message>>>) {
         self.sink = Some(sink)
+    }
+
+    pub async fn sync_data(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.data_store.save_charger_data(&self.data).await?;
+        Ok(())
     }
 
     pub async fn authenticate_with_password(&mut self, password: Option<String>) -> Result<(), Response> {

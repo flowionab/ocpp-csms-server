@@ -1,7 +1,11 @@
+use bcrypt::DEFAULT_COST;
 use chrono::Utc;
+use futures::sink::Buffer;
 use futures::SinkExt;
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use poem::web::websocket::Message::Text;
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use rust_ocpp::v1_6::messages::authorize::{AuthorizeRequest, AuthorizeResponse};
 use rust_ocpp::v1_6::messages::boot_notification::{BootNotificationRequest, BootNotificationResponse};
 use rust_ocpp::v1_6::messages::change_configuration::{ChangeConfigurationRequest, ChangeConfigurationResponse};
@@ -14,15 +18,16 @@ use rust_ocpp::v1_6::messages::meter_values::{MeterValuesRequest, MeterValuesRes
 use rust_ocpp::v1_6::messages::start_transaction::{StartTransactionRequest, StartTransactionResponse};
 use rust_ocpp::v1_6::messages::status_notification::{StatusNotificationRequest, StatusNotificationResponse};
 use rust_ocpp::v1_6::messages::stop_transaction::{StopTransactionRequest, StopTransactionResponse};
-use rust_ocpp::v1_6::types::RegistrationStatus;
+use rust_ocpp::v1_6::types::{ConfigurationStatus, RegistrationStatus};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use tokio::sync::oneshot;
-use tracing::info;
+use tracing::{error, info};
 use uuid::Uuid;
 use crate::charger::charger::Charger;
 use crate::charger::charger_model::ChargerModel;
 use crate::ocpp::OcppProtocol;
+
 
 pub struct Ocpp1_6Interface<'a>{
     pub charger: &'a mut Charger
@@ -41,11 +46,26 @@ impl<'a> Ocpp1_6Interface<'a> {
                 key: None,
             }).await? {
                 Ok(_) => {
+                    info!("Generating new password for charger");
+                    let password: String = rand::thread_rng()
+                        .sample_iter(&Alphanumeric)
+                        .take(10)
+                        .map(char::from)
+                        .collect();
+
+                    info!(password = password, "password");
+                    let hex = hex::encode(password.clone());
+
                     match self.send_change_configuration(ChangeConfigurationRequest {
-                        key: "".to_string(),
-                        value: "".to_string(),
+                        key: "AuthorizationKey".to_string(),
+                        value: hex.to_string(),
                     }).await? {
-                        Ok(_) => {}
+                        Ok(result) => {
+                            if result.status == ConfigurationStatus::Accepted {
+                                let hashed = bcrypt::hash(&password, DEFAULT_COST)?;
+                                self.charger.data_store.save_password(&self.charger.id, &hashed).await?;
+                            }
+                        }
                         Err(_) => {}
                     }
                 }
@@ -107,12 +127,16 @@ impl<'a> Ocpp1_6Interface<'a> {
     }
 
     pub async fn handle_boot_notification(&mut self, request: BootNotificationRequest) -> Result<BootNotificationResponse, OCPP1_6Error> {
-        self.charger.vendor = Some(request.charge_point_vendor.clone());
-        self.charger.serial_number = request.charge_point_serial_number;
-        self.charger.firmware_version = request.firmware_version;
-        self.charger.iccid = request.iccid;
-        self.charger.imsi = request.imsi;
-        self.charger.model = Some(ChargerModel::from_vendor_and_model(&request.charge_point_vendor, &request.charge_point_model));
+        self.charger.data.vendor = Some(request.charge_point_vendor.clone());
+        self.charger.data.serial_number = request.charge_point_serial_number;
+        self.charger.data.firmware_version = request.firmware_version;
+        self.charger.data.iccid = request.iccid;
+        self.charger.data.imsi = request.imsi;
+        self.charger.data.model = Some(request.charge_point_model);
+
+        if let Err(err) = self.charger.sync_data().await {
+            error!(error_message = err.to_string(), "Failed to update charger database");
+        }
 
         if self.charger.authenticated {
             Ok(BootNotificationResponse {

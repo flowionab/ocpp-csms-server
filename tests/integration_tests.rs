@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::time::Duration;
 use ocpp_client::{connect_1_6, ConnectOptions};
 use ocpp_client::rust_ocpp::v1_6::messages::boot_notification::BootNotificationRequest;
@@ -8,9 +9,12 @@ use tokio::time::sleep;
 
 #[tokio::test]
 async fn it_should_connect() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let decoded_string = String::from_utf8(hex::decode("71644b4f65677a377765").unwrap()).unwrap();
+
+    println!("{}", decoded_string);
     let client = connect_1_6("ws://localhost:3000/TEST123123", Some(ConnectOptions {
         username: Some("TEST123123"),
-        password: Some("123123")
+        password: Some(&decoded_string)
     })).await?;
 
     client.on_get_configuration(|_request, _| async move {
@@ -33,7 +37,7 @@ async fn it_should_connect() -> Result<(), Box<dyn std::error::Error + Send + Sy
         meter_type: None,
     }).await??;
 
-    sleep(Duration::from_millis(5000)).await;
+    sleep(Duration::from_millis(1000)).await;
 
     client.disconnect().await?;
     Ok(())

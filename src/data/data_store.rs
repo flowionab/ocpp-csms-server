@@ -1,8 +1,13 @@
 use std::fmt::Debug;
-use crate::charger::Charger;
+use crate::charger::ChargerData;
 
 #[async_trait::async_trait]
 pub trait DataStore: Send + Sync + Debug {
-    async fn get_charger_by_id(&self, id: &str) -> Result<Option<Charger>, Box<dyn std::error::Error + Send + Sync + 'static>>;
+    async fn get_charger_data_by_id(&self, id: &str) -> Result<Option<ChargerData>, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+    async fn save_charger_data(&self, data: &ChargerData) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>;
+
     async fn get_password(&self, id: &str) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+    async fn save_password(&self, id: &str, password: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>;
 }

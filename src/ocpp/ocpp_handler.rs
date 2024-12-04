@@ -26,7 +26,7 @@ async fn handle(data_store: Arc<dyn DataStore>, ws: WebSocket, headers: &HeaderM
     let password = extract_password(headers)?;
     // We should probably validate the auth header here
     let message_queue = Arc::new(Mutex::new(BTreeMap::new()));
-    let mut charger = Charger::new(&id, data_store, Arc::clone(&message_queue));
+    let mut charger = Charger::setup(&id, data_store, Arc::clone(&message_queue)).await?;
     charger.authenticate_with_password(password).await?;
     let charger = Arc::new(Mutex::new(charger));
 
