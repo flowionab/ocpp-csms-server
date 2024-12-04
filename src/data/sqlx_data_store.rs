@@ -53,6 +53,12 @@ impl DataStore for SqlxDataStore<Postgres> {
             .execute(&self.pool).await?;
         Ok(())
     }
+
+    async fn get_rfid_tag_by_hex(&self, rfid_hex: &str) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let row = sqlx::query!("SELECT * FROM rfid_tags WHERE rfid_hex = $1", rfid_hex)
+            .fetch_optional(&self.pool).await?;
+        Ok(row.map(|i| i.rfid_hex))
+    }
 }
 
 #[derive(FromRow)]

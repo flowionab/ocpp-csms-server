@@ -16,3 +16,11 @@ CREATE TABLE chargers (
   iccid VARCHAR(64),
   imsi VARCHAR(64)
 );
+
+CREATE TABLE rfid_tags (
+  id UUID NOT NULL PRIMARY KEY,
+  rfid_hex VARCHAR(28) NOT NULL,
+  user_id VARCHAR(32),
+  created_at TIMESTAMP DEFAULT current_timestamp,
+  last_used_at TIMESTAMP
+);

@@ -18,7 +18,7 @@ use rust_ocpp::v1_6::messages::meter_values::{MeterValuesRequest, MeterValuesRes
 use rust_ocpp::v1_6::messages::start_transaction::{StartTransactionRequest, StartTransactionResponse};
 use rust_ocpp::v1_6::messages::status_notification::{StatusNotificationRequest, StatusNotificationResponse};
 use rust_ocpp::v1_6::messages::stop_transaction::{StopTransactionRequest, StopTransactionResponse};
-use rust_ocpp::v1_6::types::{ConfigurationStatus, RegistrationStatus};
+use rust_ocpp::v1_6::types::{AuthorizationStatus, ConfigurationStatus, DataTransferStatus, IdTagInfo, RegistrationStatus};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use tokio::sync::oneshot;
@@ -122,8 +122,31 @@ impl<'a> Ocpp1_6Interface<'a> {
         }
     }
 
-    pub async fn handle_authorize(&mut self, _request: AuthorizeRequest) -> Result<AuthorizeResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+    pub async fn handle_authorize(&mut self, request: AuthorizeRequest) -> Result<AuthorizeResponse, OCPP1_6Error> {
+        let tag = request.id_tag;
+
+        let rfid_tag = self.charger.data_store.get_rfid_tag_by_hex(&tag).await.map_err(|error| {
+            error!(error_message = error.to_string(), rfid_tag = tag, "Failed to retrieve rfid tag from database");
+            OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
+        })?;
+
+        if rfid_tag.is_some() {
+            Ok(AuthorizeResponse {
+                id_tag_info: IdTagInfo {
+                    expiry_date: None,
+                    parent_id_tag: None,
+                    status: AuthorizationStatus::Accepted,
+                },
+            })
+        } else {
+            Ok(AuthorizeResponse {
+                id_tag_info: IdTagInfo {
+                    expiry_date: None,
+                    parent_id_tag: None,
+                    status: AuthorizationStatus::Invalid,
+                },
+            })
+        }
     }
 
     pub async fn handle_boot_notification(&mut self, request: BootNotificationRequest) -> Result<BootNotificationResponse, OCPP1_6Error> {
@@ -154,15 +177,18 @@ impl<'a> Ocpp1_6Interface<'a> {
     }
 
     pub async fn handle_data_transfer(&mut self, _request: DataTransferRequest) -> Result<DataTransferResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+        Ok(DataTransferResponse {
+            status: DataTransferStatus::Rejected,
+            data: None,
+        })
     }
 
     pub async fn handle_diagnostics_status_notification(&mut self, _request: DiagnosticsStatusNotificationRequest) -> Result<DiagnosticsStatusNotificationResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+        Ok(DiagnosticsStatusNotificationResponse {})
     }
 
     pub async fn handle_firmware_status_notification(&mut self, _request: FirmwareStatusNotificationRequest) -> Result<FirmwareStatusNotificationResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+        Ok(FirmwareStatusNotificationResponse {})
     }
 
     pub async fn handle_heartbeat(&mut self, _request: HeartbeatRequest) -> Result<HeartbeatResponse, OCPP1_6Error> {
@@ -170,18 +196,46 @@ impl<'a> Ocpp1_6Interface<'a> {
     }
 
     pub async fn handle_meter_values(&mut self, _request: MeterValuesRequest) -> Result<MeterValuesResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+        Ok(MeterValuesResponse {})
     }
 
-    pub async fn handle_start_transaction(&mut self, _request: StartTransactionRequest) -> Result<StartTransactionResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+    pub async fn handle_start_transaction(&mut self, request: StartTransactionRequest) -> Result<StartTransactionResponse, OCPP1_6Error> {
+        let tag = request.id_tag;
+        let transaction_id = 0;
+
+        let rfid_tag = self.charger.data_store.get_rfid_tag_by_hex(&tag).await.map_err(|error| {
+            error!(error_message = error.to_string(), rfid_tag = tag, "Failed to retrieve rfid tag from database");
+            OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
+        })?;
+
+        if rfid_tag.is_some() {
+            Ok(StartTransactionResponse {
+                id_tag_info: IdTagInfo {
+                    expiry_date: None,
+                    parent_id_tag: None,
+                    status: AuthorizationStatus::Accepted,
+                },
+                transaction_id
+            })
+        } else {
+            Ok(StartTransactionResponse {
+                id_tag_info: IdTagInfo {
+                    expiry_date: None,
+                    parent_id_tag: None,
+                    status: AuthorizationStatus::Invalid,
+                },
+                transaction_id
+            })
+        }
     }
 
     pub async fn handle_status_notification(&mut self, _request: StatusNotificationRequest) -> Result<StatusNotificationResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+        Ok(StatusNotificationResponse {})
     }
 
     pub async fn handle_stop_transaction(&mut self, _request: StopTransactionRequest) -> Result<StopTransactionResponse, OCPP1_6Error> {
-        Err(OCPP1_6Error::new_not_implemented("This action is not implemented"))
+        Ok(StopTransactionResponse {
+            id_tag_info: None
+        })
     }
 }

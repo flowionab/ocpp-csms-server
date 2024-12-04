@@ -8,7 +8,7 @@ use poem::web::websocket::{Message, WebSocketStream};
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tokio::sync::oneshot::Sender;
-use tracing::log::{error, warn};
+use tracing::{error, warn};
 use crate::charger::charger_data::ChargerData;
 use crate::charger::ocpp1_6interface::Ocpp1_6Interface;
 use crate::data::DataStore;
@@ -91,6 +91,7 @@ impl Charger {
 
                         match result {
                             true => {
+                                self.authenticated = true;
                                 Ok(())
                             }
                             false => {
@@ -106,7 +107,7 @@ impl Charger {
             None => {
                 self.authenticated = false;
                 if password.is_some() {
-                    warn!("The charger does have existing credentials, but it has not been onborded yet to our system, ignoring the credentials for now...")
+                    warn!(charger_id = self.id.to_string(), "The charger does have existing credentials, but it has not been onborded yet to our system, ignoring the credentials for now...")
                 }
                 Ok(())
             }
