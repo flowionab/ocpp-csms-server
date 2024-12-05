@@ -6,21 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "protoc": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt=outputServices=grpc-js --proto_path=../proto --ts_proto_out=./src ../proto/api_service.proto"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.12.4",
+    "@grpc/proto-loader": "^0.7.13",
+    "next": "15.0.3",
     "react": "19.0.0-rc-66855b96-20241106",
-    "react-dom": "19.0.0-rc-66855b96-20241106",
-    "next": "15.0.3"
+    "react-dom": "19.0.0-rc-66855b96-20241106"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "15.0.3"
+    "ts-proto": "^2.5.0",
+    "typescript": "^5"
   }
 }

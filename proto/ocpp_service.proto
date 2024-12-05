@@ -11,5 +11,5 @@ message StartTransactionRequest {
 }
 
 message StartTransactionResponse {
-  string transaction_id = 1;
+
 }

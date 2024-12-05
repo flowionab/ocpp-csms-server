@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+service Api {
+  rpc GetCharger(GetChargerRequest) returns (GetChargerResponse) {}
+}
+
+message GetChargerRequest {
+  string charger_id = 1;
+}
+
+message GetChargerResponse {
+  Charger charger = 1;
+}
+
+message Charger {
+  string id = 1;
+  optional string serial_number = 2;
+}
+

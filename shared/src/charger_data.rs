@@ -1,5 +1,4 @@
 use sqlx::FromRow;
-use crate::charger::charger_model::ChargerModel;
 
 #[derive(Debug, Clone, Default, FromRow)]
 pub struct ChargerData {
