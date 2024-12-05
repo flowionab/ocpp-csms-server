@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+service Ocpp {
+  rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
+}
+
+message StartTransactionRequest {
+  string charger_id = 1;
+}
+
+message StartTransactionResponse {
+  string transaction_id = 1;
+}

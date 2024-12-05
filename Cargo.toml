@@ -1,31 +1,6 @@
-[package]
-edition = '2021'
-name = "ocpp_csms_server"
-version = "0.1.0"
-
-[dependencies]
-tokio = { version = "1.41.1", features = ["rt", "rt-multi-thread", "macros", "signal"] }
-rust-ocpp = { version = "2.0.0", features = ["v2_0_1", "v1_6"] }
-tracing = "0.1"
-futures = "0.3"
-base64 = "0.22"
-opentelemetry = "0.27.1"
-opentelemetry_sdk = { version = "0.27.1", features = ["rt-tokio"] }
-tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
-opentelemetry-otlp = "0.27.0"
-tracing-opentelemetry = "0.28.0"
-poem = {version = "3.1.5", features = ["websocket"]}
-serde = "1.0"
-serde_json = "1.0"
-ocpp-client = "0.1.14"
-chrono = "0.4"
-async-trait = "0.1"
-bcrypt = "0.16.0"
-sqlx = { version = "0.8", features = [ "runtime-tokio", "tls-native-tls", "postgres", "uuid", "chrono", "derive", "macros" ] }
-uuid = {version = "1.11", features = ["v4", "serde"]}
-rand = "0.8"
-hex = "0.4"
-
-
-[dev-dependencies]
-ocpp-client = { version = "0.1.14", features = ["test"] }
+[workspace]
+resolver = "2"
+members = [
+    "ocpp",
+    "gui"
+]
