@@ -34,6 +34,11 @@ impl Api for ApiService {
             charger: charger.map(|charger| Charger {
                 id: charger.id,
                 serial_number: charger.serial_number,
+                model: charger.model,
+                vendor: charger.vendor,
+                firmware_version: charger.firmware_version,
+                iccid: charger.iccid,
+                imsi: charger.imsi,
             }),
         }))
     }

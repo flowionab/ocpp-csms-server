@@ -1,6 +1,6 @@
 use crate::charger::charger::Charger;
 use crate::charger::charger_model::ChargerModel;
-use crate::ocpp::OcppProtocol;
+use crate::ocpp::{Ocpp1_6Configuration, OcppProtocol};
 use bcrypt::DEFAULT_COST;
 use chrono::Utc;
 use futures::sink::Buffer;
@@ -67,7 +67,11 @@ impl<'a> Ocpp1_6Interface<'a> {
                 .send_get_configuration(GetConfigurationRequest { key: None })
                 .await?
             {
-                Ok(_) => {
+                Ok(configuration) => {
+                    self.charger.data.ocpp1_6configuration = Some(
+                        Ocpp1_6Configuration::from_full_get_configuration_response(&configuration),
+                    );
+
                     info!("Generating new password for charger");
                     let password: String = rand::thread_rng()
                         .sample_iter(&Alphanumeric)

@@ -25,6 +25,7 @@ export default async function Page(props: any) {
 
     return <div>
         <h1 className={"text-5xl mt-4"}>Hello {charger.serialNumber ?? chargerId}</h1>
-        <span className={"text-sm"}>{chargerId}</span>
+        <span className={"text-sm text-gray-300"}>{chargerId}</span>
+        <span className={"text-sm text-gray-300"}>{JSON.stringify(chargerData)}</span>
     </div>
 }

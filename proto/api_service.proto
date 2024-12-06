@@ -17,5 +17,10 @@ message GetChargerResponse {
 message Charger {
   string id = 1;
   optional string serial_number = 2;
+  optional string model = 3;
+  optional string vendor = 4;
+  optional string firmware_version = 5;
+  optional string iccid = 6;
+  optional string imsi = 7;
 }
 
