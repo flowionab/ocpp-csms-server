@@ -1,4 +1,5 @@
 use crate::charger_data::ChargerData;
+use crate::ChargerConnectionInfo;
 use std::fmt::Debug;
 
 #[async_trait::async_trait]
@@ -7,6 +8,16 @@ pub trait DataStore: Send + Sync + Debug {
         &self,
         id: &str,
     ) -> Result<Option<ChargerData>, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+    async fn get_chargers(
+        &self,
+        page: i64,
+        page_size: i64,
+    ) -> Result<Vec<ChargerData>, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+    async fn count_chargers(
+        &self,
+    ) -> Result<i64, Box<dyn std::error::Error + Send + Sync + 'static>>;
 
     async fn save_charger_data(
         &self,
@@ -28,4 +39,16 @@ pub trait DataStore: Send + Sync + Debug {
         &self,
         rfid_hex: &str,
     ) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+    async fn get_charger_connection_info(
+        &self,
+        id: &str,
+    ) -> Result<Option<ChargerConnectionInfo>, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+    async fn update_charger_connection_info(
+        &self,
+        id: &str,
+        is_online: bool,
+        node_address: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>;
 }

@@ -1,13 +1,16 @@
 use rust_ocpp::v1_6::messages::get_configuration::GetConfigurationResponse;
+use serde::{Deserialize, Serialize};
+use std::collections::btree_map::Iter;
 use std::collections::BTreeMap;
+use tracing::instrument;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Ocpp1_6ConfigurationValue {
     pub value: Option<String>,
     pub read_only: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Ocpp1_6Configuration {
     configurations: BTreeMap<String, Ocpp1_6ConfigurationValue>,
 }
@@ -70,6 +73,7 @@ impl Ocpp1_6Configuration {
         }
     }
 
+    #[instrument]
     pub fn from_full_get_configuration_response(response: &GetConfigurationResponse) -> Self {
         let mut configurations = BTreeMap::new();
 
@@ -88,7 +92,12 @@ impl Ocpp1_6Configuration {
         Self { configurations }
     }
 
+    #[instrument]
     pub fn get_configuration(&self, name: &str) -> Option<&Ocpp1_6ConfigurationValue> {
         self.configurations.get(name)
+    }
+
+    pub fn iter(&self) -> Iter<'_, String, Ocpp1_6ConfigurationValue> {
+        self.configurations.iter()
     }
 }

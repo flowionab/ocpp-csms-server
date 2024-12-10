@@ -4,15 +4,16 @@ use shared::DataStore;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tonic::transport::Server;
-use tracing::info;
+use tracing::{info, instrument};
 
+#[instrument]
 pub async fn start_server(
     data_store: Box<dyn DataStore>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter.set_serving::<ApiServer<ApiService>>().await;
 
-    let addr: SocketAddr = "[::1]:50052".parse().unwrap();
+    let addr: SocketAddr = "[::1]:50053".parse().unwrap();
 
     info!(address = addr.to_string(), "starting grpc server endpoint");
 

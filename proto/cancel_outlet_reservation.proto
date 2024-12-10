@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message CancelOutletReservationRequest {
+  string charger_id = 1;
+  string outlet_id = 2;
+}
+
+message CancelOutletReservationResponse {
+}

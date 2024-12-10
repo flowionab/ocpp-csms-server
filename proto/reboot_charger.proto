@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message RebootChargerResponse {
+
+}
+
+message RebootChargerRequest {
+  string charger_id = 1;
+  RebootType reboot_type = 2;
+
+  enum RebootType {
+    Soft = 0;
+    Hard = 1;
+  }
+}

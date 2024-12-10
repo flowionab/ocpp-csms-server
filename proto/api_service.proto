@@ -1,9 +1,24 @@
 syntax = "proto3";
+import "reboot_charger.proto";
+import "stop_transaction.proto";
+import "start_transaction.proto";
+import "clear_charger_cache.proto";
+import "change_ocpp_1_6_configuration_value.proto";
+import "change_outlet_availability.proto";
+import "cancel_outlet_reservation.proto";
 
 package ocpp_csms_server;
 
 service Api {
   rpc GetCharger(GetChargerRequest) returns (GetChargerResponse) {}
+  rpc GetChargers(GetChargersRequest) returns (GetChargersResponse) {}
+  rpc RebootCharger(RebootChargerRequest) returns (RebootChargerResponse) {}
+  rpc CancelOutletReservation(CancelOutletReservationRequest) returns (CancelOutletReservationResponse) {}
+  rpc ChangeOutletAvailability(ChangeOutletAvailabilityRequest) returns (ChangeOutletAvailabilityResponse) {}
+  rpc ChangeOcpp1_6ConfigurationValue(ChangeOcpp1_6ConfigurationValueRequest) returns (ChangeOcpp1_6ConfigurationValueResponse) {}
+  rpc ClearChargerCache(ClearChargerCacheRequest) returns (ClearChargerCacheResponse) {}
+  rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
+  rpc StopTransaction(StopTransactionRequest) returns (StopTransactionResponse) {}
 }
 
 message GetChargerRequest {
@@ -14,6 +29,19 @@ message GetChargerResponse {
   Charger charger = 1;
 }
 
+message GetChargersRequest {
+  int64 page_size = 1;
+  int64 page = 2;
+}
+
+message GetChargersResponse {
+  repeated ChargerSummary chargers = 1;
+  int64 page = 2;
+  int64 total_count = 3;
+  bool has_next = 4;
+  bool has_prev = 5;
+}
+
 message Charger {
   string id = 1;
   optional string serial_number = 2;
@@ -22,5 +50,30 @@ message Charger {
   optional string firmware_version = 5;
   optional string iccid = 6;
   optional string imsi = 7;
+  repeated Ocpp1_6Configuration ocpp1_6_configuration_values = 8;
+  optional string status = 9;
+  repeated Outlet outlets = 10;
+  bool is_online = 11;
+  string last_seen = 12;
+  string node_address = 13;
+}
+
+message ChargerSummary {
+  string id = 1;
+  optional string serial_number = 2;
+  optional string model = 3;
+  optional string vendor = 4;
+}
+
+message Ocpp1_6Configuration {
+  string key = 1;
+  optional string value = 2;
+  bool readonly = 3;
+}
+
+message Outlet {
+  string id = 1;
+  uint32 ocpp_connector_id = 2;
+  optional string status = 3;
 }
 

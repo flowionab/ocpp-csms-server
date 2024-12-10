@@ -7,25 +7,35 @@ use poem::http::{HeaderMap, HeaderValue};
 use poem::web::websocket::WebSocket;
 use poem::web::{Data, Path};
 use poem::{handler, IntoResponse, Response};
-use shared::DataStore;
+use shared::{Config, DataStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::info;
+use tracing::{info, instrument};
 
+#[instrument(skip_all)]
 #[handler]
 pub async fn ocpp_handler(
     ws: WebSocket,
     headers: &HeaderMap,
-    data: Data<&(Arc<dyn DataStore>, ChargerPool)>,
+    data: Data<&(Config, Arc<dyn DataStore>, ChargerPool)>,
     Path(id): Path<String>,
 ) -> Response {
-    handle(Arc::clone(&data.0 .0), data.0 .1.clone(), ws, headers, id)
-        .await
-        .unwrap_or_else(|r| r)
+    handle(
+        data.0 .0.clone(),
+        Arc::clone(&data.0 .1),
+        data.0 .2.clone(),
+        ws,
+        headers,
+        id,
+    )
+    .await
+    .unwrap_or_else(|r| r)
 }
 
+//#[instrument]
 async fn handle(
+    config: Config,
     data_store: Arc<dyn DataStore>,
     charger_pool: ChargerPool,
     ws: WebSocket,
@@ -33,11 +43,22 @@ async fn handle(
     id: String,
 ) -> Result<Response, Response> {
     info!(charger_id = &id, "Got connection from charger");
-    let password = extract_password(headers)?;
-    // We should probably validate the auth header here
-    let message_queue = Arc::new(Mutex::new(BTreeMap::new()));
-    let mut charger = Charger::setup(&id, data_store, Arc::clone(&message_queue)).await?;
-    charger.authenticate_with_password(password).await?;
+    let ocpp1_6message_queue = Arc::new(Mutex::new(BTreeMap::new()));
+    let ocpp2_0_1message_queue = Arc::new(Mutex::new(BTreeMap::new()));
+    let mut charger =
+        Charger::setup(&id, &config, data_store, Arc::clone(&ocpp1_6message_queue)).await?;
+
+    if config
+        .ocpp
+        .unwrap_or_default()
+        .disable_charger_auth
+        .unwrap_or_default()
+        == false
+    {
+        let password = extract_password(headers)?;
+        charger.authenticate_with_password(password).await?;
+    }
+
     let charger = Arc::new(Mutex::new(charger));
     charger_pool.insert(&id, &charger).await;
 
@@ -71,9 +92,18 @@ async fn handle(
                 .try_for_each_concurrent(None, |message| {
                     let charger = charger.clone();
                     let sink = Arc::clone(&sink);
-                    let message_queue = Arc::clone(&message_queue);
+                    let ocpp1_6message_queue = Arc::clone(&ocpp1_6message_queue);
+                    let ocpp2_0_1message_queue = Arc::clone(&ocpp2_0_1message_queue);
                     async move {
-                        handle_message(charger, message, protocol, sink, message_queue).await?;
+                        handle_message(
+                            charger,
+                            message,
+                            protocol,
+                            sink,
+                            ocpp1_6message_queue,
+                            ocpp2_0_1message_queue,
+                        )
+                        .await?;
                         Ok(())
                     }
                 })

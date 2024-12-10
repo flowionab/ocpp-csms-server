@@ -1,12 +1,12 @@
-use std::env;
 use opentelemetry::trace::TracerProvider;
 use opentelemetry_sdk::trace::Sampler;
+use std::env;
 use tracing::debug;
 use tracing_opentelemetry::OpenTelemetryLayer;
+use tracing_subscriber::filter::EnvFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::registry;
-use tracing_subscriber::filter::EnvFilter;
 
 pub fn configure_tracing() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let registry = registry();
@@ -42,8 +42,8 @@ pub fn configure_tracing() -> Result<(), Box<dyn std::error::Error + Send + Sync
         registry
             .with(
                 fmt::layer()
-                    .with_file(true)
-                    .with_line_number(true)
+                    .with_file(false)
+                    .with_line_number(false)
                     .with_ansi(true)
                     .without_time()
                     .with_filter(EnvFilter::from_env("LOG_LEVEL")),

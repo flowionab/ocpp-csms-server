@@ -1,0 +1,2 @@
+[ocpp]
+disable_charger_auth = true

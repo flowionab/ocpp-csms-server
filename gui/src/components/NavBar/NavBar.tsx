@@ -1,6 +1,6 @@
 export default function NavBar() {
     return <nav className="bg-white border-gray-200 dark:bg-neutral-900">
-        <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+        <div className="container flex flex-wrap items-center justify-between mx-auto py-4">
             <a href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
                 <img src="https://avatars.githubusercontent.com/u/145938752?s=200" className="h-8 rounded"
                      alt="Flowbite Logo"/>
@@ -27,6 +27,15 @@ export default function NavBar() {
                     <li>
                         <a href="/chargers"
                            className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Chargers</a>
+                    </li>
+                    <li>
+                        <a href="/rfid-tags"
+                           className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">RFID
+                            Tags</a>
+                    </li>
+                    <li>
+                        <a href="/configuration"
+                           className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Configuration</a>
                     </li>
                 </ul>
             </div>

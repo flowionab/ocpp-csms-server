@@ -1,6 +1,6 @@
 use crate::charger::charger::Charger;
 use crate::charger::charger_model::ChargerModel;
-use crate::ocpp::{Ocpp1_6Configuration, OcppProtocol};
+use crate::ocpp::OcppProtocol;
 use bcrypt::DEFAULT_COST;
 use chrono::Utc;
 use futures::sink::Buffer;
@@ -12,6 +12,12 @@ use rand::Rng;
 use rust_ocpp::v1_6::messages::authorize::{AuthorizeRequest, AuthorizeResponse};
 use rust_ocpp::v1_6::messages::boot_notification::{
     BootNotificationRequest, BootNotificationResponse,
+};
+use rust_ocpp::v1_6::messages::cancel_reservation::{
+    CancelReservationRequest, CancelReservationResponse,
+};
+use rust_ocpp::v1_6::messages::change_availability::{
+    ChangeAvailabilityRequest, ChangeAvailabilityResponse,
 };
 use rust_ocpp::v1_6::messages::change_configuration::{
     ChangeConfigurationRequest, ChangeConfigurationResponse,
@@ -31,6 +37,7 @@ use rust_ocpp::v1_6::messages::meter_values::{MeterValuesRequest, MeterValuesRes
 use rust_ocpp::v1_6::messages::remote_start_transaction::{
     RemoteStartTransactionRequest, RemoteStartTransactionResponse,
 };
+use rust_ocpp::v1_6::messages::reset::{ResetRequest, ResetResponse};
 use rust_ocpp::v1_6::messages::start_transaction::{
     StartTransactionRequest, StartTransactionResponse,
 };
@@ -40,11 +47,14 @@ use rust_ocpp::v1_6::messages::status_notification::{
 use rust_ocpp::v1_6::messages::stop_transaction::{
     StopTransactionRequest, StopTransactionResponse,
 };
+use rust_ocpp::v1_6::messages::trigger_message::{TriggerMessageRequest, TriggerMessageResponse};
 use rust_ocpp::v1_6::types::{
-    AuthorizationStatus, ConfigurationStatus, DataTransferStatus, IdTagInfo, RegistrationStatus,
+    AuthorizationStatus, ChargePointStatus, ConfigurationStatus, DataTransferStatus, IdTagInfo,
+    MessageTrigger, RegistrationStatus, ResetRequestStatus, TriggerMessageStatus,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use shared::{Ocpp1_6Configuration, OutletData};
 use tokio::sync::oneshot;
 use tracing::{error, info};
 use uuid::Uuid;
@@ -60,9 +70,10 @@ impl<'a> Ocpp1_6Interface<'a> {
 
     pub async fn post_request(
         &mut self,
-        _action: &str,
+        action: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        if self.charger.authenticated == false {
+        self.charger.ping().await;
+        if action == "BootNotification" {
             match self
                 .send_get_configuration(GetConfigurationRequest { key: None })
                 .await?
@@ -72,32 +83,95 @@ impl<'a> Ocpp1_6Interface<'a> {
                         Ocpp1_6Configuration::from_full_get_configuration_response(&configuration),
                     );
 
-                    info!("Generating new password for charger");
-                    let password: String = rand::thread_rng()
-                        .sample_iter(&Alphanumeric)
-                        .take(10)
-                        .map(char::from)
-                        .collect();
-
-                    let hex = hex::encode(password.clone());
-
-                    match self
-                        .send_change_configuration(ChangeConfigurationRequest {
-                            key: "AuthorizationKey".to_string(),
-                            value: hex.to_string(),
-                        })
-                        .await?
-                    {
-                        Ok(result) => {
-                            if result.status == ConfigurationStatus::Accepted {
-                                let hashed = bcrypt::hash(&password, DEFAULT_COST)?;
-                                self.charger
-                                    .data_store
-                                    .save_password(&self.charger.id, &hashed)
-                                    .await?;
+                    if let Some(conf) = &self.charger.data.ocpp1_6configuration {
+                        let num_outlets_raw = conf
+                            .get_configuration("NumberOfConnectors")
+                            .map(|i| i.value.clone())
+                            .flatten()
+                            .unwrap_or("1".to_string());
+                        let num_outlets = num_outlets_raw.parse::<usize>()?;
+                        if self.charger.data.outlets.len() < num_outlets {
+                            for index in 1..=num_outlets {
+                                if self
+                                    .charger
+                                    .data
+                                    .outlets
+                                    .iter()
+                                    .find(|i| i.ocpp_connector_id == index as u32)
+                                    .is_none()
+                                {
+                                    self.charger.data.outlets.push(OutletData {
+                                        id: Uuid::new_v4(),
+                                        ocpp_connector_id: index as u32,
+                                        status: None,
+                                    });
+                                }
                             }
                         }
-                        Err(_) => {}
+                    }
+
+                    if let Err(err) = self.charger.sync_data().await {
+                        error!(
+                            error_message = err.to_string(),
+                            "Failed to update charger database"
+                        );
+                    }
+                }
+                Err(_) => {}
+            }
+            if self.charger.authenticated == false {
+                info!("Generating new password for charger");
+                let password: String = rand::thread_rng()
+                    .sample_iter(&Alphanumeric)
+                    .take(20)
+                    .map(char::from)
+                    .collect();
+
+                let hex = hex::encode(password.clone());
+
+                match self
+                    .send_change_configuration(ChangeConfigurationRequest {
+                        key: "AuthorizationKey".to_string(),
+                        value: hex.to_string(),
+                    })
+                    .await?
+                {
+                    Ok(result) => {
+                        if result.status == ConfigurationStatus::Accepted {
+                            let hashed = bcrypt::hash(&password, DEFAULT_COST)?;
+                            self.charger
+                                .data_store
+                                .save_password(&self.charger.id, &hashed)
+                                .await?;
+                            let mut lock = self.charger.sink.as_ref().unwrap().lock().await;
+                            lock.close().await?;
+                        }
+                    }
+                    Err(_) => {}
+                }
+            }
+        }
+
+        if action == "StatusNotification" && self.charger.data.serial_number.is_none() {
+            match self
+                .send_trigger_message(TriggerMessageRequest {
+                    requested_message: MessageTrigger::BootNotification,
+                    connector_id: None,
+                })
+                .await?
+            {
+                Ok(response) => {
+                    if response.status == TriggerMessageStatus::Rejected {
+                        // Let's resort to rebooting the charger
+                        match self
+                            .send_reset(ResetRequest {
+                                kind: ResetRequestStatus::Soft,
+                            })
+                            .await?
+                        {
+                            Ok(_) => {}
+                            Err(_) => {}
+                        }
                     }
                 }
                 Err(_) => {}
@@ -135,6 +209,46 @@ impl<'a> Ocpp1_6Interface<'a> {
         Box<dyn std::error::Error + Send + Sync + 'static>,
     > {
         self.send("RemoteStartTransaction", request).await
+    }
+
+    pub async fn send_trigger_message(
+        &self,
+        request: TriggerMessageRequest,
+    ) -> Result<
+        Result<TriggerMessageResponse, OCPP1_6Error>,
+        Box<dyn std::error::Error + Send + Sync + 'static>,
+    > {
+        self.send("TriggerMessage", request).await
+    }
+
+    pub async fn send_reset(
+        &self,
+        request: ResetRequest,
+    ) -> Result<
+        Result<ResetResponse, OCPP1_6Error>,
+        Box<dyn std::error::Error + Send + Sync + 'static>,
+    > {
+        self.send("Reset", request).await
+    }
+
+    pub async fn send_cancel_reservation(
+        &self,
+        request: CancelReservationRequest,
+    ) -> Result<
+        Result<CancelReservationResponse, OCPP1_6Error>,
+        Box<dyn std::error::Error + Send + Sync + 'static>,
+    > {
+        self.send("CancelReservation", request).await
+    }
+
+    pub async fn send_change_availability(
+        &self,
+        request: ChangeAvailabilityRequest,
+    ) -> Result<
+        Result<ChangeAvailabilityResponse, OCPP1_6Error>,
+        Box<dyn std::error::Error + Send + Sync + 'static>,
+    > {
+        self.send("ChangeAvailability", request).await
     }
 
     async fn send<T: Serialize, R: DeserializeOwned>(
@@ -337,8 +451,71 @@ impl<'a> Ocpp1_6Interface<'a> {
 
     pub async fn handle_status_notification(
         &mut self,
-        _request: StatusNotificationRequest,
+        request: StatusNotificationRequest,
     ) -> Result<StatusNotificationResponse, OCPP1_6Error> {
+        if request.connector_id == 0 {
+            match request.status {
+                ChargePointStatus::Available => {
+                    self.charger.data.status = Some(shared::Status::Available)
+                }
+                ChargePointStatus::Preparing => {
+                    self.charger.data.status = Some(shared::Status::Occupied)
+                }
+                ChargePointStatus::Charging => {
+                    self.charger.data.status = Some(shared::Status::Occupied)
+                }
+                ChargePointStatus::SuspendedEVSE => {
+                    self.charger.data.status = Some(shared::Status::Occupied)
+                }
+                ChargePointStatus::SuspendedEV => {
+                    self.charger.data.status = Some(shared::Status::Occupied)
+                }
+                ChargePointStatus::Finishing => {
+                    self.charger.data.status = Some(shared::Status::Occupied)
+                }
+                ChargePointStatus::Reserved => {
+                    self.charger.data.status = Some(shared::Status::Reserved)
+                }
+                ChargePointStatus::Unavailable => {
+                    self.charger.data.status = Some(shared::Status::Unavailable)
+                }
+                ChargePointStatus::Faulted => {
+                    self.charger.data.status = Some(shared::Status::Faulted)
+                }
+            }
+        } else {
+            if let Some(outlet) = self
+                .charger
+                .data
+                .outlets
+                .iter_mut()
+                .find(|i| i.ocpp_connector_id == request.connector_id)
+            {
+                match request.status {
+                    ChargePointStatus::Available => outlet.status = Some(shared::Status::Available),
+                    ChargePointStatus::Preparing => outlet.status = Some(shared::Status::Occupied),
+                    ChargePointStatus::Charging => outlet.status = Some(shared::Status::Occupied),
+                    ChargePointStatus::SuspendedEVSE => {
+                        outlet.status = Some(shared::Status::Occupied)
+                    }
+                    ChargePointStatus::SuspendedEV => {
+                        outlet.status = Some(shared::Status::Occupied)
+                    }
+                    ChargePointStatus::Finishing => outlet.status = Some(shared::Status::Occupied),
+                    ChargePointStatus::Reserved => outlet.status = Some(shared::Status::Reserved),
+                    ChargePointStatus::Unavailable => {
+                        outlet.status = Some(shared::Status::Unavailable)
+                    }
+                    ChargePointStatus::Faulted => outlet.status = Some(shared::Status::Faulted),
+                }
+            }
+        }
+        if let Err(err) = self.charger.sync_data().await {
+            error!(
+                error_message = err.to_string(),
+                "Failed to update charger database"
+            );
+        }
         Ok(StatusNotificationResponse {})
     }
 

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message ChangeOcpp1_6ConfigurationValueRequest {
+  string charger_id = 1;
+  string key = 2;
+  string value = 3;
+}
+
+message ChangeOcpp1_6ConfigurationValueResponse {
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message ClearChargerCacheRequest {
+  string charger_id = 1;
+}
+
+message ClearChargerCacheResponse {
+}
