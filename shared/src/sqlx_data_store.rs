@@ -194,9 +194,18 @@ impl DataStore for SqlxDataStore<Postgres> {
 
 #[derive(FromRow, Debug, Clone)]
 struct PasswordRecord {
+    #[allow(dead_code)]
     id: Uuid,
+
+    #[allow(dead_code)]
     charger_id: String,
+
+    #[allow(dead_code)]
     hashed_password: String,
+
+    #[allow(dead_code)]
     created_at: DateTime<Utc>,
+
+    #[allow(dead_code)]
     last_used_at: Option<DateTime<Utc>>,
 }

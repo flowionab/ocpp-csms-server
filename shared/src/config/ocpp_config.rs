@@ -1,4 +1,3 @@
-use crate::Config;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
