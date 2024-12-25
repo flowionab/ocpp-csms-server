@@ -27,6 +27,7 @@ async fn calling_remote_start_transaction_should_work(
             grpc_client
                 .start_transaction(StartTransactionRequest {
                     charger_id: username.to_string(),
+                    outlet_id: "".to_string(),
                 })
                 .await
                 .map_err(|e| e.into())
