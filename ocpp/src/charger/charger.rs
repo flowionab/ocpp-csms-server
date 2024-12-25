@@ -28,6 +28,8 @@ use tracing::{error, instrument, warn};
 #[derive(Clone)]
 pub struct Charger {
     pub id: String,
+
+    #[allow(dead_code)]
     pub config: Config,
     pub data_store: Arc<dyn DataStore>,
     pub authenticated: bool,
@@ -176,6 +178,7 @@ impl Charger {
         Ocpp1_6Interface::new(self)
     }
 
+    #[allow(dead_code)]
     pub fn ocpp2_0_1(&mut self) -> Ocpp2_0_1Interface {
         Ocpp2_0_1Interface::new(self)
     }

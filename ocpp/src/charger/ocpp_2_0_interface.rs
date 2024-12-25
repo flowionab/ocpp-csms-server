@@ -66,16 +66,18 @@ use rust_ocpp::v2_0_1::messages::status_notification::{
 use rust_ocpp::v2_0_1::messages::transaction_event::{
     TransactionEventRequest, TransactionEventResponse,
 };
-
+#[allow(dead_code)]
 pub struct Ocpp2_0_1Interface<'a> {
     pub charger: &'a mut Charger,
 }
 
 impl<'a> Ocpp2_0_1Interface<'a> {
+    #[allow(dead_code)]
     pub fn new(charger: &'a mut Charger) -> Self {
         Self { charger }
     }
 
+    #[allow(dead_code)]
     pub async fn handle_authorize(
         &mut self,
         _request: AuthorizeRequest,
@@ -83,6 +85,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_boot_notification(
         &mut self,
         _request: BootNotificationRequest,
@@ -90,6 +93,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_cleared_charging_limit(
         &mut self,
         _request: ClearedChargingLimitRequest,
@@ -97,6 +101,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_data_transfer(
         &mut self,
         _request: DataTransferRequest,
@@ -104,6 +109,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_firmware_status_notification(
         &mut self,
         _request: FirmwareStatusNotificationRequest,
@@ -111,6 +117,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_get_15118_ev_certificate(
         &mut self,
         _request: Get15118EVCertificateRequest,
@@ -118,6 +125,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_get_certificate_status(
         &mut self,
         _request: GetCertificateStatusRequest,
@@ -125,6 +133,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_heartbeat(
         &mut self,
         _request: HeartbeatRequest,
@@ -132,6 +141,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_log_status_notification(
         &mut self,
         _request: LogStatusNotificationRequest,
@@ -139,6 +149,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_meter_values(
         &mut self,
         _request: MeterValuesRequest,
@@ -146,6 +157,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_notify_customer_information(
         &mut self,
         _request: NotifyCustomerInformationRequest,
@@ -153,6 +165,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_notify_display_messages(
         &mut self,
         _request: NotifyDisplayMessagesRequest,
@@ -160,6 +173,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_notify_ev_charging_needs(
         &mut self,
         _request: NotifyEVChargingNeedsRequest,
@@ -167,6 +181,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_notify_ev_charging_schedule(
         &mut self,
         _request: NotifyEVChargingScheduleRequest,
@@ -174,6 +189,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_notify_event(
         &mut self,
         _request: NotifyEventRequest,
@@ -181,6 +197,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_notify_monitoring_report(
         &mut self,
         _request: NotifyMonitoringReportRequest,
@@ -188,6 +205,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_notify_report(
         &mut self,
         _request: NotifyReportRequest,
@@ -195,6 +213,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_publish_firmware_status_notification(
         &mut self,
         _request: PublishFirmwareStatusNotificationRequest,
@@ -202,6 +221,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_report_charging_profiles(
         &mut self,
         _request: ReportChargingProfilesRequest,
@@ -209,6 +229,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_request_start_transaction(
         &mut self,
         _request: RequestStartTransactionRequest,
@@ -216,6 +237,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_request_stop_transaction(
         &mut self,
         _request: RequestStopTransactionRequest,
@@ -223,6 +245,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_reservation_status_update(
         &mut self,
         _request: ReservationStatusUpdateRequest,
@@ -230,6 +253,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_security_event_notification(
         &mut self,
         _request: SecurityEventNotificationRequest,
@@ -237,6 +261,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_sign_certificate(
         &mut self,
         _request: SignCertificateRequest,
@@ -244,6 +269,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_status_notification(
         &mut self,
         _request: StatusNotificationRequest,
@@ -251,6 +277,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         todo!()
     }
 
+    #[allow(dead_code)]
     pub async fn handle_transaction_event(
         &mut self,
         _request: TransactionEventRequest,
