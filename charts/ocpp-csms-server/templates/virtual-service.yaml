@@ -1,0 +1,15 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: '5'
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+  name: alias
+spec:
+  http:
+    - name: primary
+      route:
+        - destination:
+            port:
+              number: 8080
+            host: ocpp-csms-server

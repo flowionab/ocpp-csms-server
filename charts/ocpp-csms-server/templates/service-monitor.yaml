@@ -1,0 +1,20 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: '5'
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+  name: ocpp-csms-server
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: ocpp-csms-server
+  endpoints:
+    - port: http-metrics
+      interval: 15s
+      path: /metrics
