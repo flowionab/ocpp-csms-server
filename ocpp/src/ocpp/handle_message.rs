@@ -363,6 +363,7 @@ async fn handle_ocpp_1_6_call(
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn handle_ocpp_2_0_1_call(
     charger: Arc<Mutex<Charger>>,
     raw_payload: &str,
