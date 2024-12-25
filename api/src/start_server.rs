@@ -2,7 +2,6 @@ use crate::api_service::ApiService;
 use crate::ocpp_csms_server::api_server::ApiServer;
 use shared::DataStore;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use tonic::transport::Server;
 use tracing::{info, instrument};
 

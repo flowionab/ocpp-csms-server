@@ -9,7 +9,7 @@ use crate::ocpp_csms_server::{
     RebootChargerResponse, StartTransactionRequest, StartTransactionResponse,
     StopTransactionRequest, StopTransactionResponse,
 };
-use shared::{ChargerConnectionInfo, DataStore, Ocpp1_6Configuration};
+use shared::{ChargerConnectionInfo, DataStore};
 use tokio::try_join;
 use tonic::transport::Channel;
 use tonic::{Request, Response, Status};

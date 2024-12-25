@@ -1,7 +1,6 @@
 use crate::start_server::start_server;
 use shared::{configure_tracing, SqlxDataStore};
 use sqlx::postgres::PgPoolOptions;
-use std::sync::Arc;
 use tracing::info;
 
 mod api_service;

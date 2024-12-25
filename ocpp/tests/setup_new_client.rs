@@ -92,6 +92,7 @@ pub async fn setup_new_ocpp1_6_client(
     Ok((client, username.to_string()))
 }
 
+#[allow(dead_code)]
 pub async fn setup_new_ocpp2_0_1_client(
 ) -> Result<(OCPP2_0_1Client, String), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let username = Uuid::new_v4().to_string();
