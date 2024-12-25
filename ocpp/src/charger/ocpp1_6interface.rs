@@ -1,9 +1,7 @@
 use crate::charger::charger::Charger;
-use crate::charger::charger_model::ChargerModel;
 use crate::ocpp::OcppProtocol;
 use bcrypt::DEFAULT_COST;
 use chrono::Utc;
-use futures::sink::Buffer;
 use futures::SinkExt;
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use poem::web::websocket::Message::Text;

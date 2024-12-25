@@ -51,7 +51,7 @@ impl Ocpp for OcppService {
         match self.charger_pool.get(&payload.charger_id).await {
             Some(charger) => {
                 let mut lock = charger.lock().await;
-                match RebootType::from_i32(payload.reboot_type).unwrap() {
+                match RebootType::try_from(payload.reboot_type).unwrap() {
                     RebootType::Soft => {
                         lock.reboot_soft().await?;
                     }
@@ -106,21 +106,21 @@ impl Ocpp for OcppService {
 
     async fn change_ocpp1_6configuration_value(
         &self,
-        request: Request<ChangeOcpp16configurationValueRequest>,
+        _request: Request<ChangeOcpp16configurationValueRequest>,
     ) -> Result<Response<ChangeOcpp16configurationValueResponse>, Status> {
         todo!()
     }
 
     async fn clear_charger_cache(
         &self,
-        request: Request<ClearChargerCacheRequest>,
+        _request: Request<ClearChargerCacheRequest>,
     ) -> Result<Response<ClearChargerCacheResponse>, Status> {
         todo!()
     }
 
     async fn stop_transaction(
         &self,
-        request: Request<StopTransactionRequest>,
+        _request: Request<StopTransactionRequest>,
     ) -> Result<Response<StopTransactionResponse>, Status> {
         todo!()
     }

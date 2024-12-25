@@ -75,9 +75,9 @@ async fn handle_ocpp_1_6_message(
 }
 
 async fn handle_ocpp_2_0_1_message(
-    charger: Arc<Mutex<Charger>>,
+    _charger: Arc<Mutex<Charger>>,
     raw_payload: &str,
-    sink: Arc<tokio::sync::Mutex<SplitSink<WebSocketStream, Message>>>,
+    _sink: Arc<tokio::sync::Mutex<SplitSink<WebSocketStream, Message>>>,
     message_queue: Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP2_0_1Error>>>>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let parts: Vec<Value> = serde_json::from_str(&raw_payload)?;
