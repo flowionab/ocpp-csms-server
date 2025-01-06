@@ -60,6 +60,8 @@ jobs:
       - name: "Check out the repo"
         uses: actions/checkout@v3
 
+      - run: sudo apt-get install --yes --no-install-recommends musl-tools
+        
       - name: "Setup Protoc"
         uses: arduino/setup-protoc@v3
 
@@ -68,7 +70,7 @@ jobs:
           toolchain: stable
           target: x86_64-unknown-linux-musl
 
-      - run: "cargo build --release --verbose --target x86_64-unknown-linux-musl"
+      - run: "cargo build --release --target x86_64-unknown-linux-musl"
 
       - name: Build archive
         shell: bash
