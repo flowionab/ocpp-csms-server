@@ -75,7 +75,7 @@ jobs:
       - name: Build archive
         shell: bash
         run: |
-          dirname="ocpp-csms-server-${{ needs.get-tag.outputs.pkg-version }}-x86_64-unknown-linux-musl"
+          dirname="ocpp-csms-server-v${{ needs.get-tag.outputs.pkg-version }}-x86_64-unknown-linux-musl"
           mkdir "$dirname"
           cp "target/x86_64-unknown-linux-musl/release/ocpp" "$dirname"
           cp "target/x86_64-unknown-linux-musl/release/api" "$dirname"
@@ -85,7 +85,7 @@ jobs:
 
       - uses: AButler/upload-release-assets@v3.0
         with:
-          files: "ocpp-csms-server-${{ needs.get-tag.outputs.pkg-version }}-x86_64-unknown-linux-musl.tar.gz"
+          files: "ocpp-csms-server-v${{ needs.get-tag.outputs.pkg-version }}-x86_64-unknown-linux-musl.tar.gz"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           release-tag: v${{ needs.get-tag.outputs.pkg-version }}
 
@@ -107,5 +107,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE_NAME }}:latest,${{ env.IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
           labels: ${{ steps.meta.outputs.labels }}
