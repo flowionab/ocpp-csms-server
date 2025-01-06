@@ -32,8 +32,12 @@ jobs:
       - name: "Install SqlX"
         run: cargo install sqlx-cli
 
+      - name: "Configure the database"
+        run: cargo sqlx database reset
+
       - name: "Check the sqlx cache"
         run: cargo sqlx prepare --check --workspace
+
 
   check:
     name: "Cargo check"
