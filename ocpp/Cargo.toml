@@ -17,7 +17,7 @@ ocpp-client = "0.1.16"
 chrono = "0.4"
 async-trait = "0.1"
 bcrypt = "0.16.0"
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "tls-native-tls", "postgres", "uuid", "chrono", "derive", "macros"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "derive", "macros"] }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.8.5"
 hex = "0.4.3"
