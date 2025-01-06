@@ -22,8 +22,6 @@ jobs:
 
       - uses: azure/setup-helm@v4.2.0
 
-      - run: helm repo index fantastic-charts/ --url https://fantastic-charts.storage.googleapis.com
-
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         with:
