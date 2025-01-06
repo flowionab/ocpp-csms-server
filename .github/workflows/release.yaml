@@ -71,7 +71,6 @@ jobs:
         with:
           bin: "ocpp,api"
           target: ${{ matrix.target }}
-          archive: $bin-${{ matrix.target }}
           ref: refs/tags/v${{ needs.get-tag.outputs.pkg-version }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
