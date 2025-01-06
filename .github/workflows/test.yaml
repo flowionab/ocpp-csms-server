@@ -104,3 +104,35 @@ jobs:
       - run: "rustup component add clippy"
 
       - run: "cargo clippy -- -D warnings"
+  create-tag:
+    name: "Create tag"
+    runs-on: "ubuntu-latest"
+    needs:
+      - sqlx
+      - check
+      - test
+      - fmt
+      - clippy
+    permissions:
+      contents: write
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: "Check out the repo"
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Get tag"
+        id: "get-tag"
+        shell: "bash"
+        run: |
+          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' ocpp/Cargo.toml) >> $GITHUB_OUTPUT
+
+      - name: "Set Tag"
+        shell: "bash"
+        run: |
+          git tag v${{ steps.get-tag.outputs.PKG_VERSION }} || true
+
+      - name: "Push Tags"
+        shell: "bash"
+        run: git push --tags
