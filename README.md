@@ -7,14 +7,17 @@ backend systems, offering a robust solution for managing charging networks.
 ## Features
 
 - **OCPP Support**: Implements key features of OCPP versions 1.6 and 2.0.1.
-- **Scalability**: Designed to handle multiple charge points concurrently.
-- **Extensibility**: Modular architecture for adding custom functionality.
+- **Scalability**: Designed to handle multiple charge points at large scale.
 - **Real-time Communication**: Ensures reliable two-way communication between the CSMS and charge points.
 - **Secure**: Supports secure WebSocket communication and authentication.
 
 ## Getting Started
 
-## Usage
+### Usage
+
+```shell
+helm repo add ocpp-csms-server https://flowionab.github.io/ocpp-csms-server
+```
 
 ### Connecting Charge Points
 
