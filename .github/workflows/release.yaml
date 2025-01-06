@@ -54,26 +54,27 @@ jobs:
     needs:
       - "get-tag"
       - "create-release"
-    strategy:
-      matrix:
-        include:
-          - target: "x86_64-unknown-linux-gnu"
-            os: "ubuntu-latest"
-          - target: "x86_64-unknown-linux-musl"
-            os: "ubuntu-latest"
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: "Check out the repo"
         uses: actions/checkout@v3
 
-      - name: "Upload Binaries"
-        uses: "taiki-e/upload-rust-binary-action@v1"
-        with:
-          bin: "ocpp,api"
-          target: ${{ matrix.target }}
-          ref: refs/tags/v${{ needs.get-tag.outputs.pkg-version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Setup Protoc"
+        uses: arduino/setup-protoc@v3
 
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - run: "cargo build --release"
+
+      - uses: AButler/upload-release-assets@v3.0
+        with:
+          files: "target/release/ocpp;target/release/api"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: v${{ needs.get-tag.outputs.pkg-version }}
+  
+  
   push-to-registry:
     name: "Push Docker image to Docker Hub"
     needs:
