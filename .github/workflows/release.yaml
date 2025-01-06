@@ -77,8 +77,8 @@ jobs:
         run: |
           dirname="ocpp-csms-server-${{ needs.get-tag.outputs.pkg-version }}-x86_64-unknown-linux-musl"
           mkdir "$dirname"
-          mv "target/x86_64-unknown-linux-musl/release/ocpp" "$dirname"
-          mv "target/x86_64-unknown-linux-musl/release/api" "$dirname"
+          cp "target/x86_64-unknown-linux-musl/release/ocpp" "$dirname"
+          cp "target/x86_64-unknown-linux-musl/release/api" "$dirname"
           
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
