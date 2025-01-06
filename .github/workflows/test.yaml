@@ -23,11 +23,12 @@ jobs:
       - name: "Check out the repo"
         uses: actions/checkout@v3
 
-      - uses: "actions-rs/toolchain@v1"
+      - name: "Setup Protoc"
+        uses: arduino/setup-protoc@v3
+
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: "minimal"
-          toolchain: "stable"
-          override: true
+          toolchain: stable
 
       - name: "Install SqlX"
         run: cargo install sqlx-cli
@@ -49,15 +50,11 @@ jobs:
       - name: "Setup Protoc"
         uses: arduino/setup-protoc@v3
 
-      - uses: "actions-rs/toolchain@v1"
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: "minimal"
-          toolchain: "stable"
-          override: true
+          toolchain: stable
 
-      - uses: "actions-rs/cargo@v1"
-        with:
-          command: "check"
+      - run: "cargo check"
 
   test:
     name: "Cargo test"
@@ -69,11 +66,9 @@ jobs:
       - name: "Setup Protoc"
         uses: arduino/setup-protoc@v3
 
-      - uses: "actions-rs/toolchain@v1"
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: "minimal"
-          toolchain: "stable"
-          override: true
+          toolchain: stable
 
       - run: "cargo test --lib"
 
@@ -84,18 +79,13 @@ jobs:
       - name: "Check out the repo"
         uses: actions/checkout@v3
 
-      - uses: "actions-rs/toolchain@v1"
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: "minimal"
-          toolchain: "stable"
-          override: true
+          toolchain: stable
 
       - run: "rustup component add rustfmt"
 
-      - uses: "actions-rs/cargo@v1"
-        with:
-          command: "fmt"
-          args: "--all -- --check"
+      - run: "cargo fmt --all -- --check"
 
   clippy:
     name: "Cargo clippy"
@@ -107,15 +97,10 @@ jobs:
       - name: "Setup Protoc"
         uses: arduino/setup-protoc@v3
 
-      - uses: "actions-rs/toolchain@v1"
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: "minimal"
-          toolchain: "stable"
-          override: true
+          toolchain: stable
 
       - run: "rustup component add clippy"
 
-      - uses: "actions-rs/cargo@v1"
-        with:
-          command: "clippy"
-          args: "-- -D warnings"
+      - run: "cargo clippy -- -D warnings"
