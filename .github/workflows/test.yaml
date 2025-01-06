@@ -135,4 +135,4 @@ jobs:
 
       - name: "Push Tags"
         shell: "bash"
-        run: git push --tags
+        run: git push --tags || true
