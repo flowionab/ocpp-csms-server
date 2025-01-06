@@ -218,7 +218,7 @@ async fn handle_ocpp_1_6_error(
 
     let mut lock = message_queue.lock().await;
     if let Some(sender) = lock.remove(&message_id) {
-        if let Err(_) = sender.send(Err(err)) {
+        if sender.send(Err(err)).is_err() {
             warn!("The message had timed out");
         }
     } else {
@@ -234,7 +234,7 @@ async fn handle_ocpp_1_6_call(
     sink: Arc<tokio::sync::Mutex<SplitSink<WebSocketStream, Message>>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let (_, message_id, action, payload): (i64, String, String, Value) =
-        serde_json::from_str(&raw_payload)?;
+        serde_json::from_str(raw_payload)?;
     let mut lock = charger.lock().await;
 
     info!(
@@ -370,7 +370,7 @@ async fn handle_ocpp_2_0_1_call(
     sink: Arc<tokio::sync::Mutex<SplitSink<WebSocketStream, Message>>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let (_, message_id, action, payload): (i64, String, String, Value) =
-        serde_json::from_str(&raw_payload)?;
+        serde_json::from_str(raw_payload)?;
     let mut lock = charger.lock().await;
 
     info!(

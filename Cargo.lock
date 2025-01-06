@@ -1619,6 +1619,7 @@ dependencies = [
  "serde_json",
  "shared",
  "sqlx",
+ "strum",
  "tokio",
  "tonic",
  "tonic-build",

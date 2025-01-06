@@ -6,11 +6,3 @@ repos:
     hooks:
       - id: cargo-check
       - id: fmt
-  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.9.0
-    hooks:
-      - id: pretty-format-rust
-        args: [ --autofix ]
-        exclude: '^(?!proto/)'
-      - id: pretty-format-toml
-        args: [ --autofix ]

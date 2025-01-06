@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, strum::Display)]
 pub enum OcppProtocol {
+    #[strum(to_string = "ocpp1.6")]
     Ocpp1_6,
+
+    #[strum(to_string = "ocpp2.0.1")]
     Ocpp2_0_1,
 }
 
@@ -14,15 +18,6 @@ impl TryFrom<&str> for OcppProtocol {
             "ocpp1.6" => Ok(OcppProtocol::Ocpp1_6),
             "ocpp2.0.1" => Ok(OcppProtocol::Ocpp2_0_1),
             _ => Err("Protocol not recognized".into()),
-        }
-    }
-}
-
-impl ToString for OcppProtocol {
-    fn to_string(&self) -> String {
-        match self {
-            OcppProtocol::Ocpp1_6 => "ocpp1.6".to_string(),
-            OcppProtocol::Ocpp2_0_1 => "ocpp2.0.1".to_string(),
         }
     }
 }

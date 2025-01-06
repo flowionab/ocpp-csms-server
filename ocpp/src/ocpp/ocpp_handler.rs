@@ -48,12 +48,11 @@ async fn handle(
     let mut charger =
         Charger::setup(&id, &config, data_store, Arc::clone(&ocpp1_6message_queue)).await?;
 
-    if config
+    if !config
         .ocpp
         .unwrap_or_default()
         .disable_charger_auth
         .unwrap_or_default()
-        == false
     {
         let password = extract_password(headers)?;
         charger.authenticate_with_password(password).await?;

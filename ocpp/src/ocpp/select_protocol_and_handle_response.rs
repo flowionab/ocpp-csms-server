@@ -3,7 +3,7 @@ use poem::{http::StatusCode, Response};
 use tracing::warn;
 
 pub fn select_protocol_and_handle_response(protocol: &str) -> Result<&'static str, Response> {
-    match select_protocol(&protocol) {
+    match select_protocol(protocol) {
         Some(p) => Ok(p),
         None => {
             warn!(
