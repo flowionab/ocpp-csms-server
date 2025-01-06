@@ -12,7 +12,7 @@ serde = "1.0"
 serde_json = { version = "1.0", features = ["raw_value"] }
 chrono = "0.4"
 async-trait = "0.1"
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "tls-native-tls", "postgres", "uuid", "chrono", "derive", "macros", "json"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "derive", "macros", "json"] }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 opentelemetry = "0.27.1"
 opentelemetry_sdk = { version = "0.27.1", features = ["rt-tokio"] }
