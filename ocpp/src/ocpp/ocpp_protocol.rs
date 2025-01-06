@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, strum::Display)]
 pub enum OcppProtocol {

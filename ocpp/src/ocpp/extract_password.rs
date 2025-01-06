@@ -30,7 +30,7 @@ pub fn parse_authorization_header_value(header: &HeaderValue) -> Result<String, 
 
 pub fn get_encoded_part(value: &str) -> Result<String, Response> {
     let splits = value.split(" ").collect::<Vec<_>>();
-    match splits.get(0) {
+    match splits.first() {
         None => {
             warn!("Authorization header was provided, but the content should start with Basic and have base64 encoded credentials");
             return Err(Response::builder().status(StatusCode::BAD_REQUEST).body(

@@ -25,6 +25,8 @@ use tokio::sync::Mutex;
 use tonic::Status;
 use tracing::{error, instrument, warn};
 
+type Ocpp1_6MessageQueue = Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>;
+
 #[derive(Clone)]
 pub struct Charger {
     pub id: String,
@@ -41,7 +43,7 @@ pub struct Charger {
     pub protocol: Option<OcppProtocol>,
     pub sink: Option<Arc<Mutex<SplitSink<WebSocketStream, Message>>>>,
 
-    pub message_queue: Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>,
+    pub message_queue: Ocpp1_6MessageQueue,
 
     pub node_address: String,
 }
@@ -52,7 +54,7 @@ impl Charger {
         id: &str,
         config: &Config,
         data_store: Arc<dyn DataStore>,
-        message_queue: Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>,
+        message_queue: Ocpp1_6MessageQueue,
     ) -> Result<Self, Response> {
         let data = data_store.get_charger_data_by_id(id).await.map_err(|_e| {
             error!("Could not retrieve charger data");
@@ -61,28 +63,21 @@ impl Charger {
                 .body("Could not retrieve charger data".to_string())
         })?;
 
-        let authenticated = if config
+        let authenticated = config
             .ocpp
             .clone()
             .unwrap_or_default()
             .disable_charger_auth
-            .unwrap_or_default()
-            == true
-        {
-            true
-        } else {
-            false
-        };
+            .unwrap_or_default();
 
         Ok(Self {
             data_store,
             id: id.to_string(),
             authenticated,
             config: config.clone(),
-            data: data.unwrap_or_else(|| {
-                let mut d = ChargerData::default();
-                d.id = id.to_string();
-                d
+            data: data.unwrap_or_else(|| shared::ChargerData {
+                id: id.to_string(),
+                ..Default::default()
             }),
             password: None,
             protocol: None,
@@ -143,7 +138,7 @@ impl Charger {
                         .body("Missing credentials".to_string()))
                 }
                 Some(p) => {
-                    let result = bcrypt::verify(&p, &hashed_password).map_err(|_e| {
+                    let result = bcrypt::verify(p, hashed_password).map_err(|_e| {
                         error!("Failed to validate credentials");
                         Response::builder()
                             .status(StatusCode::INTERNAL_SERVER_ERROR)

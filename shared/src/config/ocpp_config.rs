@@ -10,7 +10,7 @@ pub struct OcppConfig {
 impl OcppConfig {
     pub fn print_config_warnings(&self) {
         if let Some(disable_charger_auth) = self.disable_charger_auth {
-            if disable_charger_auth == true {
+            if disable_charger_auth {
                 warn!(
                     "'ocpp.disable_charger_auth' is enabled, no charger authentication will happen"
                 )

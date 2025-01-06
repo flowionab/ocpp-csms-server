@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod charger_data;
 mod config;
 mod configure_tracing;

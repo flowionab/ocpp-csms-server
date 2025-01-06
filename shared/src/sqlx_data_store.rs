@@ -91,7 +91,7 @@ impl DataStore for SqlxDataStore<Postgres> {
         let count: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM chargers")
             .fetch_one(&self.pool)
             .await?
-            .ok_or_else(|| "No count returned")?;
+            .ok_or("No count returned")?;
         Ok(count)
     }
 

@@ -48,13 +48,14 @@ use rust_ocpp::v1_6::messages::stop_transaction::{
 use rust_ocpp::v1_6::messages::trigger_message::{TriggerMessageRequest, TriggerMessageResponse};
 use rust_ocpp::v1_6::types::{
     AuthorizationStatus, ChargePointStatus, ConfigurationStatus, DataTransferStatus, IdTagInfo,
-    MessageTrigger, RegistrationStatus, ResetRequestStatus, TriggerMessageStatus,
+    MessageTrigger, RegistrationStatus, ResetRequestStatus, ResetResponseStatus,
+    TriggerMessageStatus,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use shared::{Ocpp1_6Configuration, OutletData};
 use tokio::sync::oneshot;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 pub struct Ocpp1_6Interface<'a> {
@@ -84,19 +85,17 @@ impl<'a> Ocpp1_6Interface<'a> {
                     if let Some(conf) = &self.charger.data.ocpp1_6configuration {
                         let num_outlets_raw = conf
                             .get_configuration("NumberOfConnectors")
-                            .map(|i| i.value.clone())
-                            .flatten()
+                            .and_then(|i| i.value.clone())
                             .unwrap_or("1".to_string());
                         let num_outlets = num_outlets_raw.parse::<usize>()?;
                         if self.charger.data.outlets.len() < num_outlets {
                             for index in 1..=num_outlets {
-                                if self
+                                if !self
                                     .charger
                                     .data
                                     .outlets
                                     .iter()
-                                    .find(|i| i.ocpp_connector_id == index as u32)
-                                    .is_none()
+                                    .any(|i| i.ocpp_connector_id == index as u32)
                                 {
                                     self.charger.data.outlets.push(OutletData {
                                         id: Uuid::new_v4(),
@@ -115,9 +114,14 @@ impl<'a> Ocpp1_6Interface<'a> {
                         );
                     }
                 }
-                Err(_) => {}
+                Err(err) => {
+                    warn!(
+                        error_message = err.to_string(),
+                        "Failed to get response for GetConfigurationRequest request"
+                    )
+                }
             }
-            if self.charger.authenticated == false {
+            if !self.charger.authenticated {
                 info!("Generating new password for charger");
                 let password: String = rand::thread_rng()
                     .sample_iter(&Alphanumeric)
@@ -143,9 +147,16 @@ impl<'a> Ocpp1_6Interface<'a> {
                                 .await?;
                             let mut lock = self.charger.sink.as_ref().unwrap().lock().await;
                             lock.close().await?;
+                        } else {
+                            warn!("Failed to change the AuthorizationKey config value")
                         }
                     }
-                    Err(_) => {}
+                    Err(err) => {
+                        warn!(
+                            error_message = err.to_string(),
+                            "Failed to change the AuthorizationKey config value"
+                        )
+                    }
                 }
             }
         }
@@ -167,12 +178,26 @@ impl<'a> Ocpp1_6Interface<'a> {
                             })
                             .await?
                         {
-                            Ok(_) => {}
-                            Err(_) => {}
+                            Ok(response) => {
+                                if response.status == ResetResponseStatus::Rejected {
+                                    warn!("Failed to restart the charger")
+                                }
+                            }
+                            Err(err) => {
+                                warn!(
+                                    error_message = err.to_string(),
+                                    "Failed to restart the charger"
+                                )
+                            }
                         }
                     }
                 }
-                Err(_) => {}
+                Err(err) => {
+                    warn!(
+                        error_message = err.to_string(),
+                        "Failed to trigger the boot notification"
+                    )
+                }
             }
         }
 
@@ -258,7 +283,7 @@ impl<'a> Ocpp1_6Interface<'a> {
             .charger
             .sink
             .as_ref()
-            .ok_or_else(|| "Charger not connected yet")?;
+            .ok_or("Charger not connected yet")?;
         let message_id = Uuid::new_v4();
         let raw_payload = serde_json::to_string(&(2, message_id, action, request))?;
 
@@ -481,31 +506,23 @@ impl<'a> Ocpp1_6Interface<'a> {
                     self.charger.data.status = Some(shared::Status::Faulted)
                 }
             }
-        } else {
-            if let Some(outlet) = self
-                .charger
-                .data
-                .outlets
-                .iter_mut()
-                .find(|i| i.ocpp_connector_id == request.connector_id)
-            {
-                match request.status {
-                    ChargePointStatus::Available => outlet.status = Some(shared::Status::Available),
-                    ChargePointStatus::Preparing => outlet.status = Some(shared::Status::Occupied),
-                    ChargePointStatus::Charging => outlet.status = Some(shared::Status::Occupied),
-                    ChargePointStatus::SuspendedEVSE => {
-                        outlet.status = Some(shared::Status::Occupied)
-                    }
-                    ChargePointStatus::SuspendedEV => {
-                        outlet.status = Some(shared::Status::Occupied)
-                    }
-                    ChargePointStatus::Finishing => outlet.status = Some(shared::Status::Occupied),
-                    ChargePointStatus::Reserved => outlet.status = Some(shared::Status::Reserved),
-                    ChargePointStatus::Unavailable => {
-                        outlet.status = Some(shared::Status::Unavailable)
-                    }
-                    ChargePointStatus::Faulted => outlet.status = Some(shared::Status::Faulted),
-                }
+        } else if let Some(outlet) = self
+            .charger
+            .data
+            .outlets
+            .iter_mut()
+            .find(|i| i.ocpp_connector_id == request.connector_id)
+        {
+            match request.status {
+                ChargePointStatus::Available => outlet.status = Some(shared::Status::Available),
+                ChargePointStatus::Preparing => outlet.status = Some(shared::Status::Occupied),
+                ChargePointStatus::Charging => outlet.status = Some(shared::Status::Occupied),
+                ChargePointStatus::SuspendedEVSE => outlet.status = Some(shared::Status::Occupied),
+                ChargePointStatus::SuspendedEV => outlet.status = Some(shared::Status::Occupied),
+                ChargePointStatus::Finishing => outlet.status = Some(shared::Status::Occupied),
+                ChargePointStatus::Reserved => outlet.status = Some(shared::Status::Reserved),
+                ChargePointStatus::Unavailable => outlet.status = Some(shared::Status::Unavailable),
+                ChargePointStatus::Faulted => outlet.status = Some(shared::Status::Faulted),
             }
         }
         if let Err(err) = self.charger.sync_data().await {

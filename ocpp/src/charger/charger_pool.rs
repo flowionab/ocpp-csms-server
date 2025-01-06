@@ -22,6 +22,6 @@ impl ChargerPool {
 
     pub async fn get(&self, charger_id: &str) -> Option<Arc<Mutex<Charger>>> {
         let lock = self.chargers.lock().await;
-        lock.get(charger_id).map(|i| i.upgrade()).flatten()
+        lock.get(charger_id).and_then(|i| i.upgrade())
     }
 }

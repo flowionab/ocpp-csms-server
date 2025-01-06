@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod charger;
 mod ocpp;
 mod server;
