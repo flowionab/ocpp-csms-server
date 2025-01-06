@@ -1,2 +1,2 @@
 ---
-image: 'europe-north1-docker.pkg.dev/flowion-fa8c/flowion/alias@sha256:440f4f4f36034ddef615d384a3e0d9b80475df119e0322387f05c381919c41a5'
+image: 'ghrc.io/flowionab/ocpp-csms-server:v0.1.0'

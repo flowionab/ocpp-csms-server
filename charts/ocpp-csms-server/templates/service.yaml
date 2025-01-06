@@ -10,8 +10,8 @@ spec:
     app: 'ocpp-csms-server'
   ports:
     - protocol: TCP
-      port: 9090
-      name: http-metrics
+      port: 3000
+      name: http
     - protocol: TCP
       port: 8080
       name: grpc
