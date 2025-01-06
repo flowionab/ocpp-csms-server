@@ -4,4 +4,9 @@ FROM debian:bookworm-slim
 
 EXPOSE 3000
 
-CMD ["/bin/server"]
+WORKDIR /bin
+
+COPY target/x86_64-unknown-linux-musl/release/ocpp ./
+COPY target/x86_64-unknown-linux-musl/release/api ./
+
+CMD ["/bin/ocpp"]
