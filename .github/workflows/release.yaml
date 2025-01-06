@@ -3,6 +3,7 @@ name: "Release"
 permissions:
   contents: "write"
   packages: write
+  id-token: write
 
 env:
   REGISTRY: ghcr.io
@@ -65,12 +66,24 @@ jobs:
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
+          target: x86_64-unknown-linux-musl
 
-      - run: "cargo build --release"
+      - run: "cargo build --release --verbose --target x86_64-unknown-linux-musl"
+
+      - name: Build archive
+        shell: bash
+        run: |
+          dirname="ocpp-csms-server-${{ env.VERSION }}-x86_64-unknown-linux-musl"
+          mkdir "$dirname"
+          mv "target/x86_64-unknown-linux-musl/release/ocpp" "$dirname"
+          mv "target/x86_64-unknown-linux-musl/release/api" "$dirname"
+          
+          tar -czf "$dirname.tar.gz" "$dirname"
+          echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
 
       - uses: AButler/upload-release-assets@v3.0
         with:
-          files: "target/release/ocpp;target/release/api"
+          files: "ocpp-csms-server-${{ env.VERSION }}-x86_64-unknown-linux-musl.tar.gz"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           release-tag: v${{ needs.get-tag.outputs.pkg-version }}
   
