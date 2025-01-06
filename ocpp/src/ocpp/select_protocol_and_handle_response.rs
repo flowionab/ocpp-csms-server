@@ -1,6 +1,6 @@
+use crate::ocpp::select_protocol::select_protocol;
 use poem::{http::StatusCode, Response};
 use tracing::warn;
-use crate::ocpp::select_protocol::select_protocol;
 
 pub fn select_protocol_and_handle_response(protocol: &str) -> Result<&'static str, Response> {
     match select_protocol(&protocol) {

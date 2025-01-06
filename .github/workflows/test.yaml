@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  check:
-    name: "Cargo check"
+  sqlx:
+    name: "Verify Sqlx Cache"
     runs-on: "ubuntu-latest"
     services:
       postgres:
@@ -23,9 +23,6 @@ jobs:
       - name: "Check out the repo"
         uses: actions/checkout@v3
 
-      - name: "Setup Protoc"
-        uses: arduino/setup-protoc@v3
-
       - uses: "actions-rs/toolchain@v1"
         with:
           profile: "minimal"
@@ -36,7 +33,23 @@ jobs:
         run: cargo install sqlx-cli
 
       - name: "Configure the database"
-        run: sqlx database reset
+        run: sqlx prepare --check --workspace
+
+  check:
+    name: "Cargo check"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Check out the repo"
+        uses: actions/checkout@v3
+
+      - name: "Setup Protoc"
+        uses: arduino/setup-protoc@v3
+
+      - uses: "actions-rs/toolchain@v1"
+        with:
+          profile: "minimal"
+          toolchain: "stable"
+          override: true
 
       - uses: "actions-rs/cargo@v1"
         with:
@@ -45,17 +58,6 @@ jobs:
   test:
     name: "Cargo test"
     runs-on: "ubuntu-latest"
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-    env:
-      DATABASE_URL: "postgres://postgres:password@localhost/postgres"
     steps:
       - name: "Check out the repo"
         uses: actions/checkout@v3
@@ -68,12 +70,6 @@ jobs:
           profile: "minimal"
           toolchain: "stable"
           override: true
-
-      - name: "Install SqlX"
-        run: cargo install sqlx-cli
-
-      - name: "Configure the database"
-        run: sqlx database reset
 
       - run: "cargo test --lib"
 
@@ -100,17 +96,6 @@ jobs:
   clippy:
     name: "Cargo clippy"
     runs-on: "ubuntu-latest"
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-    env:
-      DATABASE_URL: "postgres://postgres:password@localhost/postgres"
     steps:
       - name: "Check out the repo"
         uses: actions/checkout@v3
@@ -123,12 +108,6 @@ jobs:
           profile: "minimal"
           toolchain: "stable"
           override: true
-
-      - name: "Install SqlX"
-        run: cargo install sqlx-cli
-
-      - name: "Configure the database"
-        run: sqlx database reset
 
       - run: "rustup component add clippy"
 

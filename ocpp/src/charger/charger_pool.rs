@@ -1,17 +1,17 @@
+use crate::charger::Charger;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 use tokio::sync::Mutex;
-use crate::charger::Charger;
 
 #[derive(Clone)]
 pub struct ChargerPool {
-    chargers: Arc<Mutex<BTreeMap<String, Weak<Mutex<Charger>>>>>
+    chargers: Arc<Mutex<BTreeMap<String, Weak<Mutex<Charger>>>>>,
 }
 
 impl ChargerPool {
     pub fn new() -> Self {
         Self {
-            chargers: Arc::new(Mutex::new(BTreeMap::new()))
+            chargers: Arc::new(Mutex::new(BTreeMap::new())),
         }
     }
 

@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM chargers WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "model",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "vendor",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "serial_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "firmware_version",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "iccid",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "imsi",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "ocpp1_6configuration",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "outlets",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "cff2057ecab43eef24329e358116e72e362000b6faca2697d94d81cd6a1bda5d"
+}
