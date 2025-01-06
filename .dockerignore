@@ -3,3 +3,4 @@ target/
 docker-compose.yaml
 README.md
 tests/
+!target/x86_64-unknown-linux-musl/release/
