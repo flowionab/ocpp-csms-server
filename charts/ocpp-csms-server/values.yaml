@@ -1,2 +1,8 @@
 ---
 image: 'ghrc.io/flowionab/ocpp-csms-server:v0.1.0'
+
+ocpp:
+  replicas: 1
+
+api:
+  replicas: 3
