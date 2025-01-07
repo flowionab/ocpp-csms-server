@@ -38,7 +38,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: [ "/bin/api" ]
           ports:
-            - name: http
+            - name: grpc
               containerPort: {{ .Values.api.service.port }}
               protocol: TCP
           env:
