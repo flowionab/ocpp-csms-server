@@ -26,6 +26,20 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
+{{- define "ocpp-csms-server.ocppFullname" -}}
+{{- printf "%s-ocpp" (include "ocpp-csms-server.fullname" .) }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "ocpp-csms-server.apiFullname" -}}
+{{- printf "%s-ocpp" (include "ocpp-csms-server.fullname" .) }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
 {{- define "ocpp-csms-server.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -49,6 +63,27 @@ Selector labels
 app.kubernetes.io/name: {{ include "ocpp-csms-server.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: ocpp
+{{- end }}
+
+{{/*
+Common labels
+*/}}
+{{- define "ocpp-csms-server.apiLabels" -}}
+helm.sh/chart: {{ include "ocpp-csms-server.chart" . }}
+{{ include "ocpp-csms-server.apiSelectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "ocpp-csms-server.apiSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "ocpp-csms-server.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: api
 {{- end }}
 
 {{/*

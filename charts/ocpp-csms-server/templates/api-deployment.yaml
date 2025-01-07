@@ -1,72 +1,72 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ocpp-csms-server.ocppFullname" . }}
+  name: {{ include "ocpp-csms-server.apiFullname" . }}
   labels:
-    {{- include "ocpp-csms-server.ocppLabels" . | nindent 4 }}
+    {{- include "ocpp-csms-server.apiLabels" . | nindent 4 }}
 spec:
-  {{- if not .Values.ocpp.autoscaling.enabled }}
-  replicas: {{ .Values.ocpp.replicaCount }}
+  {{- if not .Values.api.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "ocpp-csms-server.ocppSelectorLabels" . | nindent 6 }}
+      {{- include "ocpp-csms-server.apiSelectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.ocpp.podAnnotations }}
+      {{- with .Values.api.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "ocpp-csms-server.ocppLabels" . | nindent 8 }}
-        {{- with .Values.ocpp.podLabels }}
+        {{- include "ocpp-csms-server.apiLabels" . | nindent 8 }}
+        {{- with .Values.api.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.ocpp.imagePullSecrets }}
+      {{- with .Values.api.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "ocpp-csms-server.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.ocpp.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
       containers:
         - name: ocpp
           securityContext:
-            {{- toYaml .Values.ocpp.securityContext | nindent 12 }}
+            {{- toYaml .Values.api.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: [ "/bin/ocpp" ]
+          command: [ "/bin/api" ]
           ports:
             - name: http
-              containerPort: {{ .Values.ocpp.service.port }}
+              containerPort: {{ .Values.api.service.port }}
               protocol: TCP
           env:
             - name: "LOG_LEVEL"
-              value: {{ .Values.ocpp.logLevel }}
+              value: {{ .Values.api.logLevel }}
           livenessProbe:
-            {{- toYaml .Values.ocpp.livenessProbe | nindent 12 }}
+            {{- toYaml .Values.api.livenessProbe | nindent 12 }}
           readinessProbe:
-            {{- toYaml .Values.ocpp.readinessProbe | nindent 12 }}
+            {{- toYaml .Values.api.readinessProbe | nindent 12 }}
           resources:
-            {{- toYaml .Values.ocpp.resources | nindent 12 }}
-          {{- with .Values.ocpp.volumeMounts }}
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          {{- with .Values.api.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.ocpp.volumes }}
+      {{- with .Values.api.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ocpp.nodeSelector }}
+      {{- with .Values.api.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ocpp.affinity }}
+      {{- with .Values.api.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ocpp.tolerations }}
+      {{- with .Values.api.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

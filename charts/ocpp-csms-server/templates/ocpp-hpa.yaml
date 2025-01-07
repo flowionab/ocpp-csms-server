@@ -9,7 +9,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "ocpp-csms-server.fullname" . }}
+    name: {{ include "ocpp-csms-server.ocppFullname" . }}
   minReplicas: {{ .Values.ocpp.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.ocpp.autoscaling.maxReplicas }}
   metrics:
