@@ -50,7 +50,7 @@ spec:
                   name: {{ default .Values.ocpp.postgres.passwordSecret (printf "%s-postgresql" .Release.Name) }}
                   key: postgres-password
             - name: "DATABASE_URL"
-              value: "postgres://{{ default .Values.ocpp.postgres.username "postgres" }}:${DATABASE_PASSWORD}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432"
+              value: "postgres://{{ default .Values.ocpp.postgres.username "postgres" }}:$DATABASE_PASSWORD@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432"
           livenessProbe:
             {{- toYaml .Values.ocpp.livenessProbe | nindent 12 }}
           readinessProbe:
