@@ -8,7 +8,7 @@ spec:
   type: {{ .Values.api.service.type }}
   ports:
     - port: {{ .Values.api.service.port }}
-      targetPort: http
+      targetPort: grpc
       protocol: TCP
       name: grpc
   selector:

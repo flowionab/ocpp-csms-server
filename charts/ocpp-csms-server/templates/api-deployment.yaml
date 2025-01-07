@@ -56,9 +56,11 @@ spec:
             - name: "DATABASE_URL"
               value: "postgres://{{ default .Values.api.postgres.username "postgres" }}:$(DATABASE_PASSWORD)@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/postgres"
           livenessProbe:
-            {{- toYaml .Values.api.livenessProbe | nindent 12 }}
+            grpc:
+              port: {{ .Values.api.service.port }}
           readinessProbe:
-            {{- toYaml .Values.api.readinessProbe | nindent 12 }}
+            grpc:
+              port: {{ .Values.api.service.port }}
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
           {{- with .Values.api.volumeMounts }}

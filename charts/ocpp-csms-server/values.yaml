@@ -91,14 +91,6 @@ ocpp:
   #   cpu: 100m
   #   memory: 128Mi
 
-  # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-  livenessProbe:
-    grpc:
-      port: grpc
-  readinessProbe:
-    grpc:
-      port: grpc
-
   # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
   autoscaling:
     enabled: false
@@ -190,14 +182,6 @@ api:
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
-
-  # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-  livenessProbe:
-    grpc:
-      port: grpc
-  readinessProbe:
-    grpc:
-      port: grpc
 
   # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
   autoscaling:
