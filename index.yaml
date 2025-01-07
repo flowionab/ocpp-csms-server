@@ -3,6 +3,20 @@ entries:
   ocpp-csms-server:
   - apiVersion: v2
     appVersion: v0.1.4
+    created: "2025-01-07T23:18:17.298632079Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.3.5
+    description: A Helm chart for Kubernetes
+    digest: 56011741559a03593aed6b67e45e22e96ed785d8e9ebaaba5f908c430e2c3c18
+    name: ocpp-csms-server
+    type: application
+    urls:
+    - https://github.com/flowionab/ocpp-csms-server/releases/download/ocpp-csms-server-0.1.23/ocpp-csms-server-0.1.23.tgz
+    version: 0.1.23
+  - apiVersion: v2
+    appVersion: v0.1.4
     created: "2025-01-07T23:06:41.852642489Z"
     dependencies:
     - name: postgresql
@@ -185,4 +199,4 @@ entries:
     urls:
     - https://github.com/flowionab/ocpp-csms-server/releases/download/ocpp-csms-server-0.1.0/ocpp-csms-server-0.1.0.tgz
     version: 0.1.0
-generated: "2025-01-07T23:06:41.852736215Z"
+generated: "2025-01-07T23:18:17.298962758Z"
