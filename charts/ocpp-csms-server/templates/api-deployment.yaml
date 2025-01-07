@@ -50,7 +50,7 @@ spec:
                   name: {{ default .Values.api.postgres.passwordSecret (printf "%s-postgresql" .Release.Name) }}
                   key: postgres-password
             - name: "DATABASE_URL"
-              value: "postgres://{{ default .Values.api.postgres.username "postgres" }}:$DATABASE_PASSWORD@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432"
+              value: "postgres://{{ default .Values.api.postgres.username "postgres" }}:$(DATABASE_PASSWORD)@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432"
           livenessProbe:
             {{- toYaml .Values.api.livenessProbe | nindent 12 }}
           readinessProbe:
