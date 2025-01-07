@@ -29,11 +29,11 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "ocpp-csms-server.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.ocpp.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.ocpp.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: [ "/bin/ocpp" ]
@@ -41,6 +41,9 @@ spec:
             - name: http
               containerPort: {{ .Values.ocpp.service.port }}
               protocol: TCP
+          env:
+            - name: "LOG_LEVEL"
+              value: {{ .Values.ocpp.logLevel }}
           livenessProbe:
             {{- toYaml .Values.ocpp.livenessProbe | nindent 12 }}
           readinessProbe:
