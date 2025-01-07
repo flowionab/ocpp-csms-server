@@ -30,7 +30,7 @@ ocpp:
   logLevel: info
 
   postgres:
-    username: ""
+    username: "postgres"
     passwordSecret: ""
 
   # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
@@ -133,7 +133,7 @@ api:
   logLevel: info
 
   postgres:
-    username: ""
+    username: "postgres"
     passwordSecret: ""
 
   # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
@@ -230,4 +230,6 @@ api:
 
   affinity: { }
 
-postgresql: { }
+postgresql:
+  auth:
+    postgresPassword: "password"
