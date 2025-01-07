@@ -1,6 +1,7 @@
 use crate::charger::ChargerPool;
 use crate::ocpp_csms_server::ocpp_server::OcppServer;
 use crate::server::ocpp_service::OcppService;
+use std::env;
 use std::net::SocketAddr;
 use tonic::transport::Server;
 use tracing::{info, instrument};
@@ -14,7 +15,9 @@ pub async fn start_server(
         .set_serving::<OcppServer<OcppService>>()
         .await;
 
-    let addr: SocketAddr = "[::1]:50052".parse().unwrap();
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = env::var("API_PORT").unwrap_or_else(|_| "50052".to_string());
+    let addr: SocketAddr = format!("{}:{}", host, port).parse().unwrap();
 
     info!(address = addr.to_string(), "starting grpc server endpoint");
 

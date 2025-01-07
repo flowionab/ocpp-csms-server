@@ -7,9 +7,13 @@ metadata:
 spec:
   type: {{ .Values.ocpp.service.type }}
   ports:
-    - port: {{ .Values.ocpp.service.port }}
+    - port: {{ .Values.ocpp.service.ocppPort }}
       targetPort: http
       protocol: TCP
       name: http
+    - port: {{ .Values.ocpp.service.apiPort }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
   selector:
     {{ include "ocpp-csms-server.ocppSelectorLabels" . | nindent 4 }}

@@ -39,9 +39,18 @@ spec:
           command: [ "/bin/ocpp" ]
           ports:
             - name: http
-              containerPort: {{ .Values.ocpp.service.port }}
+              containerPort: {{ .Values.ocpp.service.ocppPort }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.ocpp.service.apiPort }}
               protocol: TCP
           env:
+            - name: "HOST"
+              value: "0.0.0.0"
+            - name: "OCPP_PORT"
+              value: "{{ .Values.ocpp.service.ocppPort }}"
+            - name: "API_PORT"
+              value: "{{ .Values.ocpp.service.apiPort }}"
             - name: "LOG_LEVEL"
               value: {{ .Values.ocpp.logLevel }}
             - name: DATABASE_PASSWORD

@@ -42,6 +42,10 @@ spec:
               containerPort: {{ .Values.api.service.port }}
               protocol: TCP
           env:
+            - name: "HOST"
+              value: "0.0.0.0"
+            - name: "PORT"
+              value: "{{ .Values.api.service.port }}"
             - name: "LOG_LEVEL"
               value: {{ .Values.api.logLevel }}
             - name: "DATABASE_PASSWORD"

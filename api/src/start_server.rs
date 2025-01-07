@@ -1,6 +1,7 @@
 use crate::api_service::ApiService;
 use crate::ocpp_csms_server::api_server::ApiServer;
 use shared::DataStore;
+use std::env;
 use std::net::SocketAddr;
 use tonic::transport::Server;
 use tracing::{info, instrument};
@@ -12,7 +13,9 @@ pub async fn start_server(
     let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter.set_serving::<ApiServer<ApiService>>().await;
 
-    let addr: SocketAddr = "[::1]:50053".parse().unwrap();
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = env::var("PORT").unwrap_or_else(|_| "50053".to_string());
+    let addr: SocketAddr = format!("{}:{}", host, port).parse().unwrap();
 
     info!(address = addr.to_string(), "starting grpc server endpoint");
 
