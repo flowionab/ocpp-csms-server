@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "ocpp-csms-server.fullname" . }}
   labels:
-    {{- include "test.labels" . | nindent 4 }}
+    {{- include "ocpp-csms-server.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.ocpp.autoscaling.enabled }}
   replicas: {{ .Values.ocpp.replicaCount }}

@@ -34,8 +34,8 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "ocpp-csms-server.labels" -}}
-helm.sh/chart: {{ include "test.chart" . }}
-{{ include "test.selectorLabels" . }}
+helm.sh/chart: {{ include "ocpp-csms-server.chart" . }}
+{{ include "ocpp-csms-server.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -46,7 +46,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Selector labels
 */}}
 {{- define "ocpp-csms-server.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "test.name" . }}
+app.kubernetes.io/name: {{ include "ocpp-csms-server.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
@@ -55,7 +55,7 @@ Create the name of the service account to use
 */}}
 {{- define "ocpp-csms-server.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "test.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "ocpp-csms-server.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
