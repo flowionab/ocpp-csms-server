@@ -34,7 +34,7 @@ Create chart name and version as used by the chart label.
 Create chart name and version as used by the chart label.
 */}}
 {{- define "ocpp-csms-server.apiFullname" -}}
-{{- printf "%s-ocpp" (include "ocpp-csms-server.fullname" .) }}
+{{- printf "%s-api" (include "ocpp-csms-server.fullname" .) }}
 {{- end }}
 
 {{/*
