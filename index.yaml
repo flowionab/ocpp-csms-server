@@ -3,6 +3,16 @@ entries:
   ocpp-csms-server:
   - apiVersion: v2
     appVersion: v0.1.0
+    created: "2025-01-07T20:35:11.381880085Z"
+    description: A Helm chart for Kubernetes
+    digest: ce93482721561de390c2283077daee49c012829b99de90a415f76dc0b4a4de08
+    name: ocpp-csms-server
+    type: application
+    urls:
+    - https://github.com/flowionab/ocpp-csms-server/releases/download/ocpp-csms-server-0.1.8/ocpp-csms-server-0.1.8.tgz
+    version: 0.1.8
+  - apiVersion: v2
+    appVersion: v0.1.0
     created: "2025-01-07T20:24:39.779515745Z"
     description: A Helm chart for Kubernetes
     digest: 659f3f1950902072344cb77047ae303c3be7e04a2a1cf70f16b358798bbf84cb
@@ -71,4 +81,4 @@ entries:
     urls:
     - https://github.com/flowionab/ocpp-csms-server/releases/download/ocpp-csms-server-0.1.0/ocpp-csms-server-0.1.0.tgz
     version: 0.1.0
-generated: "2025-01-07T20:24:39.779546182Z"
+generated: "2025-01-07T20:35:11.381912445Z"
