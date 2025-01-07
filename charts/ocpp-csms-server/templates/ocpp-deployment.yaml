@@ -60,6 +60,8 @@ spec:
                   key: postgres-password
             - name: "DATABASE_URL"
               value: "postgres://{{ default .Values.ocpp.postgres.username "postgres" }}:$(DATABASE_PASSWORD)@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/postgres"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.openTelemetryEndpoint }}
           livenessProbe:
             grpc:
               port: {{ .Values.ocpp.service.apiPort }}
