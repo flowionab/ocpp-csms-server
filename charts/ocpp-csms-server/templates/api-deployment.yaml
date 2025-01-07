@@ -44,7 +44,7 @@ spec:
           env:
             - name: "LOG_LEVEL"
               value: {{ .Values.api.logLevel }}
-            - name: DATABASE_PASSWORD
+            - name: "DATABASE_PASSWORD"
               valueFrom:
                 secretKeyRef:
                   name: {{ default .Values.api.postgres.passwordSecret (printf "%s-postgresql" .Release.Name) }}
