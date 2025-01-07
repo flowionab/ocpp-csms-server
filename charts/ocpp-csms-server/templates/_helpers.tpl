@@ -33,9 +33,9 @@ Create chart name and version as used by the chart label.
 {{/*
 Common labels
 */}}
-{{- define "ocpp-csms-server.labels" -}}
+{{- define "ocpp-csms-server.ocppLabels" -}}
 helm.sh/chart: {{ include "ocpp-csms-server.chart" . }}
-{{ include "ocpp-csms-server.selectorLabels" . }}
+{{ include "ocpp-csms-server.ocppSelectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,9 +45,10 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "ocpp-csms-server.selectorLabels" -}}
+{{- define "ocpp-csms-server.ocppSelectorLabels" -}}
 app.kubernetes.io/name: {{ include "ocpp-csms-server.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: ocpp
 {{- end }}
 
 {{/*

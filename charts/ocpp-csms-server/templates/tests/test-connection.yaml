@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: "{{ include "ocpp-csms-server.fullname" . }}-test-connection"
   labels:
-    {{ include "ocpp-csms-server.labels" . | nindent 4 }}
+    {{ include "ocpp-csms-server.ocppLabels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
 spec:

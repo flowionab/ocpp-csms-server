@@ -4,7 +4,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "ocpp-csms-server.fullname" . }}
   labels:
-    {{- include "ocpp-csms-server.labels" . | nindent 4 }}
+    {{- include "ocpp-csms-server.ocppLabels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

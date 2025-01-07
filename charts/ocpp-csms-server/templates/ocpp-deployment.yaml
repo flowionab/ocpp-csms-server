@@ -3,14 +3,14 @@ kind: Deployment
 metadata:
   name: {{ include "ocpp-csms-server.fullname" . }}
   labels:
-    {{- include "ocpp-csms-server.labels" . | nindent 4 }}
+    {{- include "ocpp-csms-server.ocppLabels" . | nindent 4 }}
 spec:
   {{- if not .Values.ocpp.autoscaling.enabled }}
   replicas: {{ .Values.ocpp.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "ocpp-csms-server.selectorLabels" . | nindent 6 }}
+      {{- include "ocpp-csms-server.ocppSelectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.ocpp.podAnnotations }}
@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "ocpp-csms-server.labels" . | nindent 8 }}
+        {{- include "ocpp-csms-server.ocppLabels" . | nindent 8 }}
         {{- with .Values.ocpp.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -31,7 +31,7 @@ spec:
       securityContext:
         {{- toYaml .Values.ocpp.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: ocpp
           securityContext:
             {{- toYaml .Values.ocpp.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
