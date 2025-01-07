@@ -44,6 +44,13 @@ spec:
           env:
             - name: "LOG_LEVEL"
               value: {{ .Values.ocpp.logLevel }}
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.ocpp.postgres.passwordSecret (printf "%s-postgresql" .Release.Name) }}
+                  key: postgres-password
+            - name: "DATABASE_URL"
+              value: "postgres://{{ default .Values.ocpp.postgres.username .Values.postgresql.auth.username }}:${DATABASE_PASSWORD}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432"
           livenessProbe:
             {{- toYaml .Values.ocpp.livenessProbe | nindent 12 }}
           readinessProbe:
