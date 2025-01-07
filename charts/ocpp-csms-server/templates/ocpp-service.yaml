@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ocpp-csms-server.fullname" . }}
+  labels:
+    {{ include "ocpp-csms-server.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.ocpp.service.type }}
+  ports:
+    - port: {{ .Values.ocpp.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{ include "ocpp-csms-server.selectorLabels" . | nindent 4 }}
