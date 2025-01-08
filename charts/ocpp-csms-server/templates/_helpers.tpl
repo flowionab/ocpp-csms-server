@@ -40,6 +40,13 @@ Create chart name and version as used by the chart label.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
+{{- define "ocpp-csms-server.migrationFullname" -}}
+{{- printf "%s-migration" (include "ocpp-csms-server.fullname" .) }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
 {{- define "ocpp-csms-server.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -84,6 +91,27 @@ Selector labels
 app.kubernetes.io/name: {{ include "ocpp-csms-server.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: api
+{{- end }}
+
+{{/*
+Common labels
+*/}}
+{{- define "ocpp-csms-server.migrationsLabels" -}}
+helm.sh/chart: {{ include "ocpp-csms-server.chart" . }}
+{{ include "ocpp-csms-server.migrationsSelectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "ocpp-csms-server.migrationsSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "ocpp-csms-server.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: migrations
 {{- end }}
 
 {{/*
