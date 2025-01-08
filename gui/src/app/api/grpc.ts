@@ -1,4 +1,4 @@
-import {ApiClient} from "../../api_service";
+import {ApiClient} from "@/api_service";
 import {credentials} from "@grpc/grpc-js";
 
 

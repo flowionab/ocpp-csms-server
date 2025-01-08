@@ -168,7 +168,7 @@ jobs:
       - name: "Build and push Docker image"
         uses: "docker/build-push-action@v3"
         with:
-          context: ./gui/
+          context: .
           file: ./gui/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.GUI_IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.GUI_IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
