@@ -15,12 +15,12 @@ COPY ./proto ./proto
 WORKDIR /app/gui
 
 RUN npm ci
+RUN npm run protoc
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/gui/node_modules ./gui/node_modules
-COPY --from=deps /app/proto ./gui/proto
 COPY ./gui/ ./gui/
 
 WORKDIR /app/gui
@@ -30,7 +30,6 @@ WORKDIR /app/gui
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run protoc
 RUN npm run build
 
 # Production image, copy all the files and run next
