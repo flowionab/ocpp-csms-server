@@ -3,7 +3,9 @@ import {GetChargerResponse} from "@/api_service";
 
 export const dynamic = 'force-dynamic'
 
-export default async function Page(props: any) {
+export default async function Page(props: {
+    params: Promise<{ chargerId: string }>
+}) {
     const params = await props.params;
     const chargerId = params.chargerId;
 
@@ -31,6 +33,7 @@ export default async function Page(props: any) {
                     <div key={i.key} className={"p-4 border h-48 dark:bg-neutral-800 border-neutral-900 flex flex-col"}>
                         <div className={"flex-1 flex flex-col justify-center"}>
                             {i.value?.split(",").map((j) => (<span
+                                key={j}
                                 className={`text-center ${(i.value?.split(",").length ?? 1) > 3 ? "text-xs" : "text-xl"} ${mapValueColor(j)}`}>{mapValue(j)}</span>))}
 
                         </div>

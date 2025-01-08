@@ -12,9 +12,9 @@ export default function ChangeOutletAvailabilityButton({chargerId, outletId, sta
     const callback = useCallback(() => {
         setLoading(true)
         changeOutletAvailability(chargerId, outletId, status === "Unavailable").finally(() => setLoading(false))
-    }, [setLoading, chargerId, outletId])
+    }, [setLoading, chargerId, outletId, status])
 
-    let message = status === "Unavailable" ? "Enable outlet" : "Disable outlet"
+    const message = status === "Unavailable" ? "Enable outlet" : "Disable outlet"
 
     return <button type="button"
                    onClick={callback}

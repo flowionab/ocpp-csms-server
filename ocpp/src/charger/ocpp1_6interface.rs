@@ -1,4 +1,5 @@
 use crate::charger::charger::Charger;
+use crate::charger::charger_model::ChargerModel;
 use crate::ocpp::OcppProtocol;
 use bcrypt::DEFAULT_COST;
 use chrono::Utc;
@@ -122,40 +123,46 @@ impl<'a> Ocpp1_6Interface<'a> {
                 }
             }
             if !self.charger.authenticated {
-                info!("Generating new password for charger");
-                let password: String = rand::thread_rng()
-                    .sample_iter(&Alphanumeric)
-                    .take(20)
-                    .map(char::from)
-                    .collect();
+                if let Some(ChargerModel::Easee(_)) = self.charger.model() {
+                    warn!("Easee chargers uses a master password, it will be matched during next reconnect");
+                    let mut lock = self.charger.sink.as_ref().unwrap().lock().await;
+                    lock.close().await?;
+                } else {
+                    info!("Generating new password for charger");
+                    let password: String = rand::thread_rng()
+                        .sample_iter(&Alphanumeric)
+                        .take(20)
+                        .map(char::from)
+                        .collect();
 
-                let hex = hex::encode(password.clone());
+                    let hex = hex::encode(password.clone());
 
-                match self
-                    .send_change_configuration(ChangeConfigurationRequest {
-                        key: "AuthorizationKey".to_string(),
-                        value: hex.to_string(),
-                    })
-                    .await?
-                {
-                    Ok(result) => {
-                        if result.status == ConfigurationStatus::Accepted {
-                            let hashed = bcrypt::hash(&password, DEFAULT_COST)?;
-                            self.charger
-                                .data_store
-                                .save_password(&self.charger.id, &hashed)
-                                .await?;
-                            let mut lock = self.charger.sink.as_ref().unwrap().lock().await;
-                            lock.close().await?;
-                        } else {
-                            warn!("Failed to change the AuthorizationKey config value")
+                    match self
+                        .send_change_configuration(ChangeConfigurationRequest {
+                            key: "AuthorizationKey".to_string(),
+                            value: hex.to_string(),
+                        })
+                        .await?
+                    {
+                        Ok(result) => {
+                            if result.status == ConfigurationStatus::Accepted {
+                                let hashed = bcrypt::hash(&password, DEFAULT_COST)?;
+                                self.charger
+                                    .data_store
+                                    .save_password(&self.charger.id, &hashed)
+                                    .await?;
+                                let mut lock = self.charger.sink.as_ref().unwrap().lock().await;
+                                lock.close().await?;
+                            } else {
+                                warn!("Failed to change the AuthorizationKey config value")
+                            }
                         }
-                    }
-                    Err(err) => {
-                        warn!(
-                            error_message = err.to_string(),
-                            "Failed to change the AuthorizationKey config value"
-                        )
+                        Err(err) => {
+                            warn!(
+                                error_message = err.to_string(),
+                                "Failed to change the AuthorizationKey config value"
+                            )
+                        }
                     }
                 }
             }

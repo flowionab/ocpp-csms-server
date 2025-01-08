@@ -2,7 +2,9 @@ import {getCharger} from "@/app/chargers/[chargerId]/getCharger";
 import HardRebootButton from "@/app/chargers/[chargerId]/settings/HardRebootButton";
 import SoftRebootButton from "@/app/chargers/[chargerId]/settings/SoftRebootButton";
 
-export default async function Page(props: any) {
+export default async function Page(props: {
+    params: Promise<{ chargerId: string }>
+}) {
     const params = await props.params;
     const chargerId = params.chargerId;
     const charger = await getCharger(chargerId);

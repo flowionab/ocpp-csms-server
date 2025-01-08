@@ -4,7 +4,9 @@ import ChangeOutletAvailabilityButton from "@/app/chargers/[chargerId]/ChangeOut
 
 export const dynamic = 'force-dynamic'
 
-export default async function Page(props: any) {
+export default async function Page(props: {
+    params: Promise<{ chargerId: string }>
+}) {
     const params = await props.params;
     const chargerId = params.chargerId;
     const charger = await getCharger(chargerId);

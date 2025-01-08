@@ -27,7 +27,6 @@ export default async function Page() {
                     <div className={"flex-1"}/>
                     <span className={"text-md"}>{i.vendor}</span>
                     <span className={"text-md"}>{i.model}</span>
-                    <span className={"text-md"}>{i.firmwareVersion}</span>
                     <span className={"text-xs text-gray-300 mt-1"}>{i.id}</span>
                 </Link>))}
         </div>

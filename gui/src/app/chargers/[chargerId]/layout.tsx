@@ -1,6 +1,9 @@
 import Link from "next/link";
+import React from "react";
 
-export default async function Layout({children, params}: any) {
+export default async function Layout({children, params}: React.PropsWithChildren<{
+    params: Promise<{ chargerId: string }>
+}>) {
     const {chargerId} = await params;
     return <>
         <nav className={"h-12 border-gray-300 dark:bg-neutral-800 flex flex-row justify-center"}>

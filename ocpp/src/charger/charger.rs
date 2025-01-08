@@ -1,3 +1,4 @@
+use crate::charger::charger_model::ChargerModel;
 use crate::charger::ocpp1_6interface::Ocpp1_6Interface;
 use crate::charger::ocpp_2_0_interface::Ocpp2_0_1Interface;
 use crate::ocpp::OcppProtocol;
@@ -19,6 +20,7 @@ use serde_json::Value;
 use shared::DataStore;
 use shared::{ChargerData, Config};
 use std::collections::BTreeMap;
+use std::env;
 use std::sync::Arc;
 use tokio::sync::oneshot::Sender;
 use tokio::sync::Mutex;
@@ -126,8 +128,40 @@ impl Charger {
         password: Option<String>,
     ) -> Result<(), Response> {
         self.password = password.clone();
-        let hashed_password_opt = self.data_store.get_password(&self.id).await.map_err(|_e| {
-            error!("Failed to validate credentials");
+
+        if let Some(ChargerModel::Easee(_)) = self.model() {
+            return match env::var("EASEE_MASTER_PASSWORD") {
+                Ok(master_password) => {
+                    if password == Some(master_password) {
+                        self.authenticated = true;
+                        Ok(())
+                    } else {
+                        warn!(
+                            charger_id = self.id.to_string(),
+                            "The charger is an Easee charger, but the password is incorrect"
+                        );
+                        Err(Response::builder()
+                            .status(StatusCode::FORBIDDEN)
+                            .body("Invalid password".to_string()))
+                    }
+                }
+                Err(_) => {
+                    warn!(
+                        charger_id = self.id.to_string(),
+                        "The charger is an Easee charger, but the EASEE_MASTER_PASSWORD env var is not set, will reject it for now"
+                    );
+                    Err(Response::builder()
+                        .status(StatusCode::FORBIDDEN)
+                        .body("Easee charger are currently not accepted".to_string()))
+                }
+            };
+        }
+
+        let hashed_password_opt = self.data_store.get_password(&self.id).await.map_err(|e| {
+            error!(
+                error_message = e.to_string(),
+                "Failed to validate credentials"
+            );
             Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .body("Failed to validate credentials".to_string())
@@ -379,5 +413,14 @@ impl Charger {
             }
             OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
         }
+    }
+
+    pub fn model(&self) -> Option<ChargerModel> {
+        if let Some(vendor) = &self.data.vendor {
+            if let Some(model) = &self.data.model {
+                return Some(ChargerModel::from_vendor_and_model(vendor, model));
+            };
+        };
+        None
     }
 }
