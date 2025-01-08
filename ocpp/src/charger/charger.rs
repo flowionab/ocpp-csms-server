@@ -56,8 +56,11 @@ impl Charger {
         data_store: Arc<dyn DataStore>,
         message_queue: Ocpp1_6MessageQueue,
     ) -> Result<Self, Response> {
-        let data = data_store.get_charger_data_by_id(id).await.map_err(|_e| {
-            error!("Could not retrieve charger data");
+        let data = data_store.get_charger_data_by_id(id).await.map_err(|e| {
+            error!(
+                error_message = e.to_string(),
+                "Could not retrieve charger data"
+            );
             Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .body("Could not retrieve charger data".to_string())
