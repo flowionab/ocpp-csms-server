@@ -9,6 +9,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   MIGRATION_IMAGE_NAME: ${{ github.repository }}-sqlx
+  GUI_IMAGE_NAME: ${{ github.repository }}-gui
 
 on:
   push:
@@ -110,8 +111,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
           labels: ${{ steps.meta.outputs.labels }}
-  publish-migration-dockerfile:
-    name: "Publish migration dockerfile"
+  publish-gui-dockerfile:
+    name: "Publish GUI dockerfile"
     needs:
       - "get-tag"
       - "create-release"
@@ -140,4 +141,35 @@ jobs:
           file: sqlx.Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.MIGRATION_IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.MIGRATION_IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
+          labels: ${{ steps.meta.outputs.labels }}
+  publish-migration-dockerfile:
+    name: "Publish migration dockerfile"
+    needs:
+      - "get-tag"
+      - "create-release"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check out the repo"
+        uses: actions/checkout@v3
+
+      - name: "Log in to Github Packages"
+        uses: "docker/login-action@v2"
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Extract metadata (tags, labels) for Docker"
+        id: "meta"
+        uses: "docker/metadata-action@v4"
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+
+      - name: "Build and push Docker image"
+        uses: "docker/build-push-action@v3"
+        with:
+          context: ./gui/
+          file: ./gui/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.GUI_IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.GUI_IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
           labels: ${{ steps.meta.outputs.labels }}
