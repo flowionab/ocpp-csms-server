@@ -5,22 +5,22 @@ FROM node:18-alpine AS base
 # Install dependencies only when needed
 FROM base AS deps
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat protobuf-dev
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY ./gui/package.json ./gui/package-lock.json* ./gui/.npmrc* ./gui/
-COPY ./proto ./proto
 
 WORKDIR /app/gui
 
 RUN npm ci
-RUN npm run protoc
 
 # Rebuild the source code only when needed
 FROM base AS builder
+RUN apk add --no-cache protobuf-dev
 WORKDIR /app
 COPY --from=deps /app/gui/node_modules ./gui/node_modules
+COPY ./proto ./proto
 COPY ./gui/ ./gui/
 
 WORKDIR /app/gui
@@ -30,6 +30,7 @@ WORKDIR /app/gui
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED=1
 
+RUN npm run protoc
 RUN npm run build
 
 # Production image, copy all the files and run next
