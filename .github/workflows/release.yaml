@@ -111,8 +111,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
           labels: ${{ steps.meta.outputs.labels }}
-  publish-gui-dockerfile:
-    name: "Publish GUI dockerfile"
+  publish-migration-dockerfile:
+    name: "Publish migration dockerfile"
     needs:
       - "get-tag"
       - "create-release"
@@ -142,8 +142,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.MIGRATION_IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.MIGRATION_IMAGE_NAME }}:v${{ needs.get-tag.outputs.pkg-version }}
           labels: ${{ steps.meta.outputs.labels }}
-  publish-migration-dockerfile:
-    name: "Publish migration dockerfile"
+  publish-gui-dockerfile:
+    name: "Publish GUI dockerfile"
     needs:
       - "get-tag"
       - "create-release"
