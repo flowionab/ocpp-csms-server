@@ -1,0 +1,32 @@
+{{- if .Values.gui.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "ocpp-csms-server.guiFullname" . }}
+  labels:
+    {{- include "ocpp-csms-server.guiLabels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "ocpp-csms-server.guiFullname" . }}
+  minReplicas: {{ .Values.gui.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.gui.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.gui.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gui.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.gui.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gui.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

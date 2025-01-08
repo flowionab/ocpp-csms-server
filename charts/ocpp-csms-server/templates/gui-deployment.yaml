@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ocpp-csms-server.guiFullname" . }}
+  labels:
+    {{- include "ocpp-csms-server.guiLabels" . | nindent 4 }}
+spec:
+  {{- if not .Values.gui.autoscaling.enabled }}
+  replicas: {{ .Values.gui.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "ocpp-csms-server.guiSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.gui.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ocpp-csms-server.guiLabels" . | nindent 8 }}
+        {{- with .Values.gui.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.gui.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "ocpp-csms-server.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.gui.podSecurityContext | nindent 8 }}
+      containers:
+        - name: gui
+          securityContext:
+            {{- toYaml .Values.gui.securityContext | nindent 12 }}
+          image: "{{ .Values.guiImage.repository }}:{{ .Values.guiImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.guiImage.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.gui.service.port }}
+              protocol: TCP
+          env:
+            - name: "PORT"
+              value: "{{ .Values.gui.service.port }}"
+          livenessProbe:
+            httpGet:
+              port: {{ .Values.gui.service.port }}
+              path: /
+          readinessProbe:
+            httpGet:
+              port: {{ .Values.gui.service.port }}
+              path: /
+          resources:
+            {{- toYaml .Values.gui.resources | nindent 12 }}
+          {{- with .Values.gui.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.gui.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gui.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gui.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gui.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
