@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "ocpp-csms-server.ocppLabels" . | nindent 4 }}
 spec:
+  revisionHistoryLimit: 0
   {{- if not .Values.ocpp.autoscaling.enabled }}
   replicas: {{ .Values.ocpp.replicaCount }}
   {{- end }}

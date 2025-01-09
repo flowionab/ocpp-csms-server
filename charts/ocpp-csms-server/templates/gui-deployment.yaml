@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "ocpp-csms-server.guiLabels" . | nindent 4 }}
 spec:
+  revisionHistoryLimit: 0
   {{- if not .Values.gui.autoscaling.enabled }}
   replicas: {{ .Values.gui.replicaCount }}
   {{- end }}
