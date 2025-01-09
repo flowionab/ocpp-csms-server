@@ -69,6 +69,13 @@ spec:
                   fieldPath: status.podIP
             - name: "NODE_ADDRESS"
               value: "http://$(MY_POD_IP):{{ .Values.ocpp.service.apiPort }}"
+            {{- if .Values.ocpp.easee.masterPasswordSecret }}
+            - name: "EASEE_MASTER_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ocpp.easee.masterPasswordSecret }}
+                  key: {{ .Values.ocpp.easee.masterPasswordSecretKey }}
+            {{- end }}
           livenessProbe:
             grpc:
               port: {{ .Values.ocpp.service.apiPort }}

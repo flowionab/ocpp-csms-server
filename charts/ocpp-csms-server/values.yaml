@@ -42,6 +42,10 @@ serviceAccount:
 
 ocpp:
 
+  easee:
+    masterPasswordSecret: ""
+    masterPasswordSecretKey: "easee-master-password"
+
   logLevel: info
 
   postgres:
