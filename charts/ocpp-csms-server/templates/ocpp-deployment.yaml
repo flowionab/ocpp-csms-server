@@ -67,7 +67,7 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: "NODE_ADDRESS"
-              value: "http://$(MY_POD_IP).{{ .Release.Namespace }}.pod.cluster.local:{{ .Values.ocpp.service.apiPort }}"
+              value: "http://$(MY_POD_IP):{{ .Values.ocpp.service.apiPort }}"
           livenessProbe:
             grpc:
               port: {{ .Values.ocpp.service.apiPort }}
