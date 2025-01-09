@@ -15,14 +15,25 @@ pub async fn start_ocpp_server(
     data_store: Arc<dyn DataStore>,
     charger_pool: &ChargerPool,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let node_address =
+        env::var("NODE_ADDRESS").unwrap_or_else(|_| "http://localhost:50052".to_string());
+
     let app = Route::new().at(
         "/:id",
-        get(ocpp_handler).data((config.clone(), data_store, charger_pool.clone())),
+        get(ocpp_handler).data((
+            config.clone(),
+            data_store,
+            charger_pool.clone(),
+            node_address.clone(),
+        )),
     );
 
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = env::var("OCPP_PORT").unwrap_or_else(|_| "50051".to_string());
     let addr: SocketAddr = format!("{}:{}", host, port).parse().unwrap();
+
+    info!("starting OCPP server at http://{}:{}", host, port);
+    info!("node address used is {}", node_address);
 
     Server::new(TcpListener::bind(addr))
         .run_with_graceful_shutdown(

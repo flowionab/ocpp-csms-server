@@ -43,6 +43,8 @@ spec:
           env:
             - name: "PORT"
               value: "{{ .Values.gui.service.port }}"
+            - name: "API_URL"
+              value: "ocpp-csms-server-api.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.api.service.port }}""
           livenessProbe:
             httpGet:
               port: {{ .Values.gui.service.port }}

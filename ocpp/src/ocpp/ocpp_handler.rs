@@ -18,13 +18,14 @@ use tracing::{info, instrument};
 pub async fn ocpp_handler(
     ws: WebSocket,
     headers: &HeaderMap,
-    data: Data<&(Config, Arc<dyn DataStore>, ChargerPool)>,
+    data: Data<&(Config, Arc<dyn DataStore>, ChargerPool, String)>,
     Path(id): Path<String>,
 ) -> Response {
     handle(
         data.0 .0.clone(),
         Arc::clone(&data.0 .1),
         data.0 .2.clone(),
+        data.0 .3.clone(),
         ws,
         headers,
         id,
@@ -38,6 +39,7 @@ async fn handle(
     config: Config,
     data_store: Arc<dyn DataStore>,
     charger_pool: ChargerPool,
+    node_address: String,
     ws: WebSocket,
     headers: &HeaderMap,
     id: String,
@@ -45,8 +47,14 @@ async fn handle(
     info!(charger_id = &id, "Got connection from charger");
     let ocpp1_6message_queue = Arc::new(Mutex::new(BTreeMap::new()));
     let ocpp2_0_1message_queue = Arc::new(Mutex::new(BTreeMap::new()));
-    let mut charger =
-        Charger::setup(&id, &config, data_store, Arc::clone(&ocpp1_6message_queue)).await?;
+    let mut charger = Charger::setup(
+        &id,
+        &config,
+        data_store,
+        Arc::clone(&ocpp1_6message_queue),
+        &node_address,
+    )
+    .await?;
 
     if !config
         .ocpp

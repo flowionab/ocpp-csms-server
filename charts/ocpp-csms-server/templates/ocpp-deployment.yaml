@@ -62,6 +62,12 @@ spec:
               value: "postgres://{{ default .Values.ocpp.postgres.username "postgres" }}:$(DATABASE_PASSWORD)@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/postgres"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.openTelemetryEndpoint }}
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: "NODE_ADDRESS"
+              value: "http://$(MY_POD_IP).{{ .Release.Namespace }}.pod.cluster.local:{{ .Values.ocpp.service.apiPort }}"
           livenessProbe:
             grpc:
               port: {{ .Values.ocpp.service.apiPort }}

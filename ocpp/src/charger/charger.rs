@@ -57,6 +57,7 @@ impl Charger {
         config: &Config,
         data_store: Arc<dyn DataStore>,
         message_queue: Ocpp1_6MessageQueue,
+        node_address: &str,
     ) -> Result<Self, Response> {
         let data = data_store.get_charger_data_by_id(id).await.map_err(|e| {
             error!(
@@ -88,7 +89,7 @@ impl Charger {
             protocol: None,
             sink: None,
             message_queue,
-            node_address: "http://localhost:50052".to_string(),
+            node_address: node_address.to_string(),
         })
     }
 
