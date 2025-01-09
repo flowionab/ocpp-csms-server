@@ -136,8 +136,6 @@ impl Charger {
         if let Some(ChargerModel::Easee(_)) = self.model() {
             return match &self.easee_master_password {
                 Some(master_password) => {
-                    dbg!(&master_password);
-                    dbg!(&password);
                     if password.as_ref() == Some(master_password) {
                         self.authenticated = true;
                         Ok(())
@@ -241,7 +239,7 @@ impl Charger {
                         .ocpp1_6()
                         .send_remote_start_transaction(RemoteStartTransactionRequest {
                             connector_id: Some(outlet.ocpp_connector_id),
-                            id_tag: "".to_string(),
+                            id_tag: "central".to_string(),
                             charging_profile: None,
                         })
                         .await
