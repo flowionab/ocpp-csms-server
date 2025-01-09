@@ -1,5 +1,7 @@
 use crate::charger::ChargerPool;
 use crate::ocpp::ocpp_handler::ocpp_handler;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use poem::listener::TcpListener;
 use poem::{get, EndpointExt, Route, Server};
 use shared::{Config, DataStore};
@@ -18,6 +20,16 @@ pub async fn start_ocpp_server(
     let node_address =
         env::var("NODE_ADDRESS").unwrap_or_else(|_| "http://localhost:50052".to_string());
 
+    let easee_master_password: Option<String> =
+        env::var("EASEE_MASTER_PASSWORD").ok().map(|password| {
+            BASE64_STANDARD
+                .decode(password)
+                .expect("EASEE_MASTER_PASSWORD should be base64 encoded")
+                .into_iter()
+                .map(|b| b as char)
+                .collect()
+        });
+
     let app = Route::new().at(
         "/:id",
         get(ocpp_handler).data((
@@ -25,6 +37,7 @@ pub async fn start_ocpp_server(
             data_store,
             charger_pool.clone(),
             node_address.clone(),
+            easee_master_password.clone(),
         )),
     );
 

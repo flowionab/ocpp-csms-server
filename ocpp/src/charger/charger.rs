@@ -20,7 +20,6 @@ use serde_json::Value;
 use shared::DataStore;
 use shared::{ChargerData, Config};
 use std::collections::BTreeMap;
-use std::env;
 use std::sync::Arc;
 use tokio::sync::oneshot::Sender;
 use tokio::sync::Mutex;
@@ -48,6 +47,8 @@ pub struct Charger {
     pub message_queue: Ocpp1_6MessageQueue,
 
     pub node_address: String,
+
+    pub easee_master_password: Option<String>,
 }
 
 impl Charger {
@@ -58,6 +59,7 @@ impl Charger {
         data_store: Arc<dyn DataStore>,
         message_queue: Ocpp1_6MessageQueue,
         node_address: &str,
+        easee_master_password: Option<String>,
     ) -> Result<Self, Response> {
         let data = data_store.get_charger_data_by_id(id).await.map_err(|e| {
             error!(
@@ -90,6 +92,7 @@ impl Charger {
             sink: None,
             message_queue,
             node_address: node_address.to_string(),
+            easee_master_password,
         })
     }
 
@@ -131,9 +134,9 @@ impl Charger {
         self.password = password.clone();
 
         if let Some(ChargerModel::Easee(_)) = self.model() {
-            return match env::var("EASEE_MASTER_PASSWORD") {
-                Ok(master_password) => {
-                    if password == Some(master_password) {
+            return match &self.easee_master_password {
+                Some(master_password) => {
+                    if password.as_ref() == Some(master_password) {
                         self.authenticated = true;
                         Ok(())
                     } else {
@@ -146,7 +149,7 @@ impl Charger {
                             .body("Invalid password".to_string()))
                     }
                 }
-                Err(_) => {
+                None => {
                     warn!(
                         charger_id = self.id.to_string(),
                         "The charger is an Easee charger, but the EASEE_MASTER_PASSWORD env var is not set, will reject it for now"

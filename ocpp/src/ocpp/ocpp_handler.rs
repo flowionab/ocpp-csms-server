@@ -13,12 +13,20 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{info, instrument};
 
+type DataType<'a> = Data<&'a (
+    Config,
+    Arc<dyn DataStore>,
+    ChargerPool,
+    String,
+    Option<String>,
+)>;
+
 #[instrument(skip_all)]
 #[handler]
 pub async fn ocpp_handler(
     ws: WebSocket,
     headers: &HeaderMap,
-    data: Data<&(Config, Arc<dyn DataStore>, ChargerPool, String)>,
+    data: DataType<'_>,
     Path(id): Path<String>,
 ) -> Response {
     handle(
@@ -26,6 +34,7 @@ pub async fn ocpp_handler(
         Arc::clone(&data.0 .1),
         data.0 .2.clone(),
         data.0 .3.clone(),
+        data.0 .4.clone(),
         ws,
         headers,
         id,
@@ -34,12 +43,14 @@ pub async fn ocpp_handler(
     .unwrap_or_else(|r| r)
 }
 
+#[allow(clippy::too_many_arguments)]
 //#[instrument]
 async fn handle(
     config: Config,
     data_store: Arc<dyn DataStore>,
     charger_pool: ChargerPool,
     node_address: String,
+    easee_master_password: Option<String>,
     ws: WebSocket,
     headers: &HeaderMap,
     id: String,
@@ -53,6 +64,7 @@ async fn handle(
         data_store,
         Arc::clone(&ocpp1_6message_queue),
         &node_address,
+        easee_master_password.clone(),
     )
     .await?;
 
