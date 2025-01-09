@@ -1560,7 +1560,7 @@ dependencies = [
 
 [[package]]
 name = "ocpp"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "async-trait",
  "base64 0.22.1",

@@ -136,6 +136,8 @@ impl Charger {
         if let Some(ChargerModel::Easee(_)) = self.model() {
             return match &self.easee_master_password {
                 Some(master_password) => {
+                    dbg!(&master_password);
+                    dbg!(&password);
                     if password.as_ref() == Some(master_password) {
                         self.authenticated = true;
                         Ok(())
