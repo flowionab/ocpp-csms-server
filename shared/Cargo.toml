@@ -21,4 +21,4 @@ opentelemetry-otlp = "0.27.0"
 tracing-opentelemetry = "0.28.0"
 rust-ocpp = { version = "2.0.0", features = ["v2_0_1", "v1_6"] }
 toml = "0.8.19"
-strum = { version = "0.26.3", features = ["derive"] }
+strum = { version = "0.27.1", features = ["derive"] }

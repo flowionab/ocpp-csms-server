@@ -10,7 +10,7 @@ use tracing::{info, instrument};
 pub async fn start_server(
     data_store: Box<dyn DataStore>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-    let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
+    let (health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter.set_serving::<ApiServer<ApiService>>().await;
 
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());

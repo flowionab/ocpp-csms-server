@@ -6,7 +6,7 @@ use chrono::Utc;
 use futures::SinkExt;
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use poem::web::websocket::Message::Text;
-use rand::distributions::Alphanumeric;
+use rand::distr::Alphanumeric;
 use rand::Rng;
 use rust_ocpp::v1_6::messages::authorize::{AuthorizeRequest, AuthorizeResponse};
 use rust_ocpp::v1_6::messages::boot_notification::{
@@ -129,7 +129,7 @@ impl<'a> Ocpp1_6Interface<'a> {
                     lock.close().await?;
                 } else {
                     info!("Generating new password for charger");
-                    let password: String = rand::thread_rng()
+                    let password: String = rand::rng()
                         .sample_iter(&Alphanumeric)
                         .take(20)
                         .map(char::from)
