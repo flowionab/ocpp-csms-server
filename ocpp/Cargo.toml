@@ -26,6 +26,8 @@ prost = "0.13.3"
 tonic-health = "0.13.0"
 shared = { path = "../shared" }
 strum = "0.27.1"
+lapin = "3.0.0-beta.2"
+dotenvy = "0.15.7"
 
 [build-dependencies]
 tonic-build = "0.13.0"

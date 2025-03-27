@@ -1,6 +1,7 @@
 use crate::charger::charger_model::ChargerModel;
 use crate::charger::ocpp1_6interface::Ocpp1_6Interface;
 use crate::charger::ocpp_2_0_interface::Ocpp2_0_1Interface;
+use crate::event::EventManager;
 use crate::ocpp::OcppProtocol;
 use crate::server::map_ocpp1_6_error_to_status;
 use futures::stream::SplitSink;
@@ -49,6 +50,8 @@ pub struct Charger {
     pub node_address: String,
 
     pub easee_master_password: Option<String>,
+
+    pub event_manager: EventManager,
 }
 
 impl Charger {
@@ -60,6 +63,7 @@ impl Charger {
         message_queue: Ocpp1_6MessageQueue,
         node_address: &str,
         easee_master_password: Option<String>,
+        event_manager: EventManager,
     ) -> Result<Self, Response> {
         let data = data_store.get_charger_data_by_id(id).await.map_err(|e| {
             error!(
@@ -93,6 +97,7 @@ impl Charger {
             message_queue,
             node_address: node_address.to_string(),
             easee_master_password,
+            event_manager,
         })
     }
 
@@ -203,7 +208,7 @@ impl Charger {
             None => {
                 self.authenticated = false;
                 if password.is_some() {
-                    warn!(charger_id = self.id.to_string(), "The charger does have existing credentials, but it has not been onborded yet to our system, ignoring the credentials for now...")
+                    warn!(charger_id = self.id.to_string(), "The charger does have existing credentials, but it has not been onboarded yet to our system, ignoring the credentials for now...")
                 }
                 Ok(())
             }
@@ -223,7 +228,7 @@ impl Charger {
     pub async fn start_transaction(&mut self, outlet_id: &str) -> Result<(), Status> {
         let outlet = self
             .data
-            .outlets
+            .evses
             .clone()
             .into_iter()
             .find(|i| i.id.to_string() == outlet_id)
@@ -238,7 +243,7 @@ impl Charger {
                     let response = self
                         .ocpp1_6()
                         .send_remote_start_transaction(RemoteStartTransactionRequest {
-                            connector_id: Some(outlet.ocpp_connector_id),
+                            connector_id: Some(outlet.ocpp_evse_id),
                             id_tag: "central".to_string(),
                             charging_profile: None,
                         })
@@ -379,7 +384,7 @@ impl Charger {
 
         let outlet = self
             .data
-            .outlets
+            .evses
             .clone()
             .into_iter()
             .find(|i| i.id.to_string() == outlet_id)
@@ -390,7 +395,7 @@ impl Charger {
                 let response = self
                     .ocpp1_6()
                     .send_change_availability(ChangeAvailabilityRequest {
-                        connector_id: outlet.ocpp_connector_id,
+                        connector_id: outlet.ocpp_evse_id,
                         kind: if available {
                             AvailabilityType::Operative
                         } else {

@@ -54,9 +54,9 @@ use rust_ocpp::v1_6::types::{
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use shared::{Ocpp1_6Configuration, OutletData};
+use shared::{ConnectorData, EvseData, Ocpp1_6Configuration};
 use tokio::sync::oneshot;
-use tracing::{error, info, warn};
+use tracing::{error, info, instrument, warn};
 use uuid::Uuid;
 
 pub struct Ocpp1_6Interface<'a> {
@@ -89,19 +89,24 @@ impl<'a> Ocpp1_6Interface<'a> {
                             .and_then(|i| i.value.clone())
                             .unwrap_or("1".to_string());
                         let num_outlets = num_outlets_raw.parse::<usize>()?;
-                        if self.charger.data.outlets.len() < num_outlets {
+                        if self.charger.data.evses.len() < num_outlets {
                             for index in 1..=num_outlets {
                                 if !self
                                     .charger
                                     .data
-                                    .outlets
+                                    .evses
                                     .iter()
-                                    .any(|i| i.ocpp_connector_id == index as u32)
+                                    .any(|i| i.ocpp_evse_id == index as u32)
                                 {
-                                    self.charger.data.outlets.push(OutletData {
+                                    self.charger.data.evses.push(EvseData {
                                         id: Uuid::new_v4(),
-                                        ocpp_connector_id: index as u32,
+                                        ocpp_evse_id: index as u32,
                                         status: None,
+                                        connectors: vec![ConnectorData {
+                                            id: Uuid::new_v4(),
+                                            ocpp_connector_id: 1,
+                                            status: None,
+                                        }],
                                     });
                                 }
                             }
@@ -211,6 +216,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn send_get_configuration(
         &self,
         request: GetConfigurationRequest,
@@ -221,6 +227,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         self.send("GetConfiguration", request).await
     }
 
+    #[instrument(skip(self))]
     pub async fn send_change_configuration(
         &self,
         request: ChangeConfigurationRequest,
@@ -231,6 +238,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         self.send("ChangeConfiguration", request).await
     }
 
+    #[instrument(skip(self))]
     pub async fn send_remote_start_transaction(
         &self,
         request: RemoteStartTransactionRequest,
@@ -241,6 +249,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         self.send("RemoteStartTransaction", request).await
     }
 
+    #[instrument(skip(self))]
     pub async fn send_trigger_message(
         &self,
         request: TriggerMessageRequest,
@@ -251,6 +260,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         self.send("TriggerMessage", request).await
     }
 
+    #[instrument(skip(self))]
     pub async fn send_reset(
         &self,
         request: ResetRequest,
@@ -261,6 +271,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         self.send("Reset", request).await
     }
 
+    #[instrument(skip(self))]
     pub async fn send_cancel_reservation(
         &self,
         request: CancelReservationRequest,
@@ -271,6 +282,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         self.send("CancelReservation", request).await
     }
 
+    #[instrument(skip(self))]
     pub async fn send_change_availability(
         &self,
         request: ChangeAvailabilityRequest,
@@ -325,6 +337,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         }
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_authorize(
         &mut self,
         request: AuthorizeRequest,
@@ -364,6 +377,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         }
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_boot_notification(
         &mut self,
         request: BootNotificationRequest,
@@ -397,6 +411,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         }
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_data_transfer(
         &mut self,
         _request: DataTransferRequest,
@@ -407,6 +422,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         })
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_diagnostics_status_notification(
         &mut self,
         _request: DiagnosticsStatusNotificationRequest,
@@ -414,6 +430,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         Ok(DiagnosticsStatusNotificationResponse {})
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_firmware_status_notification(
         &mut self,
         _request: FirmwareStatusNotificationRequest,
@@ -421,6 +438,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         Ok(FirmwareStatusNotificationResponse {})
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_heartbeat(
         &mut self,
         _request: HeartbeatRequest,
@@ -430,6 +448,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         })
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_meter_values(
         &mut self,
         _request: MeterValuesRequest,
@@ -437,6 +456,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         Ok(MeterValuesResponse {})
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_start_transaction(
         &mut self,
         request: StartTransactionRequest,
@@ -479,68 +499,95 @@ impl<'a> Ocpp1_6Interface<'a> {
         }
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_status_notification(
         &mut self,
         request: StatusNotificationRequest,
     ) -> Result<StatusNotificationResponse, OCPP1_6Error> {
-        if request.connector_id == 0 {
-            match request.status {
-                ChargePointStatus::Available => {
-                    self.charger.data.status = Some(shared::Status::Available)
+        if request.connector_id != 0 {
+            if let Some(evse) = self.charger.data.evse_by_ocpp_id_mut(request.connector_id) {
+                let evse_id = evse.id;
+                match request.status {
+                    ChargePointStatus::Available => {
+                        evse.status = Some(shared::Status::Available);
+                    }
+                    ChargePointStatus::Preparing => {
+                        evse.status = Some(shared::Status::Occupied);
+                    }
+                    ChargePointStatus::Charging => {
+                        evse.status = Some(shared::Status::Occupied);
+                    }
+                    ChargePointStatus::SuspendedEVSE => {
+                        evse.status = Some(shared::Status::Occupied);
+                    }
+                    ChargePointStatus::SuspendedEV => {
+                        evse.status = Some(shared::Status::Occupied);
+                    }
+                    ChargePointStatus::Finishing => {
+                        evse.status = Some(shared::Status::Occupied);
+                    }
+                    ChargePointStatus::Reserved => {
+                        evse.status = Some(shared::Status::Reserved);
+                    }
+                    ChargePointStatus::Unavailable => {
+                        evse.status = Some(shared::Status::Unavailable);
+                    }
+                    ChargePointStatus::Faulted => {
+                        evse.status = Some(shared::Status::Faulted);
+                    }
                 }
-                ChargePointStatus::Preparing => {
-                    self.charger.data.status = Some(shared::Status::Occupied)
-                }
-                ChargePointStatus::Charging => {
-                    self.charger.data.status = Some(shared::Status::Occupied)
-                }
-                ChargePointStatus::SuspendedEVSE => {
-                    self.charger.data.status = Some(shared::Status::Occupied)
-                }
-                ChargePointStatus::SuspendedEV => {
-                    self.charger.data.status = Some(shared::Status::Occupied)
-                }
-                ChargePointStatus::Finishing => {
-                    self.charger.data.status = Some(shared::Status::Occupied)
-                }
-                ChargePointStatus::Reserved => {
-                    self.charger.data.status = Some(shared::Status::Reserved)
-                }
-                ChargePointStatus::Unavailable => {
-                    self.charger.data.status = Some(shared::Status::Unavailable)
-                }
-                ChargePointStatus::Faulted => {
-                    self.charger.data.status = Some(shared::Status::Faulted)
+                if let Some(connector) = evse.connector_by_ocpp_id_mut(1) {
+                    match request.status {
+                        ChargePointStatus::Available => {
+                            connector.status = Some(shared::Status::Available);
+                        }
+                        ChargePointStatus::Preparing => {
+                            connector.status = Some(shared::Status::Occupied);
+                        }
+                        ChargePointStatus::Charging => {
+                            connector.status = Some(shared::Status::Occupied);
+                        }
+                        ChargePointStatus::SuspendedEVSE => {
+                            connector.status = Some(shared::Status::Occupied);
+                        }
+                        ChargePointStatus::SuspendedEV => {
+                            connector.status = Some(shared::Status::Occupied);
+                        }
+                        ChargePointStatus::Finishing => {
+                            connector.status = Some(shared::Status::Occupied);
+                        }
+                        ChargePointStatus::Reserved => {
+                            connector.status = Some(shared::Status::Reserved);
+                        }
+                        ChargePointStatus::Unavailable => {
+                            connector.status = Some(shared::Status::Unavailable);
+                        }
+                        ChargePointStatus::Faulted => {
+                            connector.status = Some(shared::Status::Faulted);
+                        }
+                    }
+                    self.charger
+                        .event_manager
+                        .send_connector_status_event(
+                            request.status.into(),
+                            request.timestamp.unwrap_or_else(Utc::now),
+                            evse_id,
+                            connector.id,
+                        )
+                        .await;
                 }
             }
-        } else if let Some(outlet) = self
-            .charger
-            .data
-            .outlets
-            .iter_mut()
-            .find(|i| i.ocpp_connector_id == request.connector_id)
-        {
-            match request.status {
-                ChargePointStatus::Available => outlet.status = Some(shared::Status::Available),
-                ChargePointStatus::Preparing => outlet.status = Some(shared::Status::Occupied),
-                ChargePointStatus::Charging => outlet.status = Some(shared::Status::Occupied),
-                ChargePointStatus::SuspendedEVSE => outlet.status = Some(shared::Status::Occupied),
-                ChargePointStatus::SuspendedEV => outlet.status = Some(shared::Status::Occupied),
-                ChargePointStatus::Finishing => outlet.status = Some(shared::Status::Occupied),
-                ChargePointStatus::Reserved => outlet.status = Some(shared::Status::Reserved),
-                ChargePointStatus::Unavailable => outlet.status = Some(shared::Status::Unavailable),
-                ChargePointStatus::Faulted => outlet.status = Some(shared::Status::Faulted),
+            if let Err(err) = self.charger.sync_data().await {
+                error!(
+                    error_message = err.to_string(),
+                    "Failed to update charger database"
+                );
             }
-        }
-        if let Err(err) = self.charger.sync_data().await {
-            error!(
-                error_message = err.to_string(),
-                "Failed to update charger database"
-            );
         }
         Ok(StatusNotificationResponse {})
     }
 
+    #[instrument(skip(self))]
     pub async fn handle_stop_transaction(
         &mut self,
         _request: StopTransactionRequest,

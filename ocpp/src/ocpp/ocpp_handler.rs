@@ -1,4 +1,5 @@
 use crate::charger::{Charger, ChargerPool};
+use crate::event::EventManager;
 use crate::ocpp::extract_password::extract_password;
 use crate::ocpp::handle_message::handle_message;
 use crate::ocpp::validate_protocol::validate_protocol;
@@ -19,6 +20,7 @@ type DataType<'a> = Data<&'a (
     ChargerPool,
     String,
     Option<String>,
+    EventManager,
 )>;
 
 #[instrument(skip_all)]
@@ -38,6 +40,7 @@ pub async fn ocpp_handler(
         ws,
         headers,
         id,
+        data.0 .5.clone(),
     )
     .await
     .unwrap_or_else(|r| r)
@@ -54,6 +57,7 @@ async fn handle(
     ws: WebSocket,
     headers: &HeaderMap,
     id: String,
+    event_manager: EventManager,
 ) -> Result<Response, Response> {
     info!(charger_id = &id, "Got connection from charger");
     let ocpp1_6message_queue = Arc::new(Mutex::new(BTreeMap::new()));
@@ -65,6 +69,7 @@ async fn handle(
         Arc::clone(&ocpp1_6message_queue),
         &node_address,
         easee_master_password.clone(),
+        event_manager.clone(),
     )
     .await?;
 

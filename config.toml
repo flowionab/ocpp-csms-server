@@ -2,3 +2,4 @@
 disable_charger_auth = true
 
 [amqp]
+enabled = true

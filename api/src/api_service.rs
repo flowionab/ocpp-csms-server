@@ -101,11 +101,11 @@ impl Api for ApiService {
                     .unwrap_or_default(),
                 status: charger.status.map(|i| i.to_string()),
                 outlets: charger
-                    .outlets
+                    .evses
                     .into_iter()
                     .map(|data| Outlet {
                         id: data.id.to_string(),
-                        ocpp_connector_id: data.ocpp_connector_id,
+                        ocpp_connector_id: data.ocpp_evse_id,
                         status: data.status.map(|i| i.to_string()),
                     })
                     .collect(),

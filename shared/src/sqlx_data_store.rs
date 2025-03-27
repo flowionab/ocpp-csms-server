@@ -44,7 +44,7 @@ impl DataStore for SqlxDataStore<Postgres> {
             status: record
                 .status
                 .map(|i| Status::from_str(&i).unwrap_or_default()),
-            outlets: record
+            evses: record
                 .outlets
                 .map(|j| serde_json::from_str(&j).unwrap_or_default())
                 .unwrap_or_default(),
@@ -79,7 +79,7 @@ impl DataStore for SqlxDataStore<Postgres> {
                 status: record
                     .status
                     .map(|i| Status::from_str(&i).unwrap_or_default()),
-                outlets: record
+                evses: record
                     .outlets
                     .map(|j| serde_json::from_str(&j).unwrap_or_default())
                     .unwrap_or_default(),
@@ -101,7 +101,7 @@ impl DataStore for SqlxDataStore<Postgres> {
         data: &ChargerData,
     ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         let ocpp1_6configuration = serde_json::to_string(&data.ocpp1_6configuration)?;
-        let outlets = serde_json::to_string(&data.outlets)?;
+        let outlets = serde_json::to_string(&data.evses)?;
         sqlx::query!("
             INSERT INTO chargers (id, model, vendor, serial_number, firmware_version, iccid, imsi, ocpp1_6configuration, status, outlets)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

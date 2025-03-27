@@ -1,4 +1,5 @@
 use crate::charger::ChargerPool;
+use crate::event::EventManager;
 use crate::ocpp::ocpp_handler::ocpp_handler;
 use poem::listener::TcpListener;
 use poem::{get, EndpointExt, Route, Server};
@@ -14,6 +15,7 @@ pub async fn start_ocpp_server(
     config: &Config,
     data_store: Arc<dyn DataStore>,
     charger_pool: &ChargerPool,
+    event_manager: EventManager,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let node_address =
         env::var("NODE_ADDRESS").unwrap_or_else(|_| "http://localhost:50052".to_string());
@@ -33,6 +35,7 @@ pub async fn start_ocpp_server(
             charger_pool.clone(),
             node_address.clone(),
             easee_master_password.clone(),
+            event_manager.clone(),
         )),
     );
 
