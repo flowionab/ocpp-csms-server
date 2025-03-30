@@ -37,12 +37,23 @@ Contributions are welcome! Please follow these steps:
 3. Commit your changes and push to your fork.
 4. Open a pull request to the `main` branch.
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
-
 ## Acknowledgments
 
 - [Open Charge Alliance](https://www.openchargealliance.org/) for maintaining the OCPP specification.
 - Community contributors for suggestions and improvements.
+
+#### License
+
+<sup>
+Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
+2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
+</sup>
+
+<br>
+
+<sub>
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
+be dual licensed as above, without any additional terms or conditions.
+</sub>
 
