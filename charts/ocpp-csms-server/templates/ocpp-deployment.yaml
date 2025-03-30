@@ -80,7 +80,7 @@ spec:
             - name: "AMQP_URL"
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.ocpp.amqp.passwordSecret }}
+                  name: {{ .Values.ocpp.amqp.secretName }}
                   key: "url"
             {{- end }}
           livenessProbe:
