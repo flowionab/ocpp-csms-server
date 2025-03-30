@@ -76,6 +76,13 @@ spec:
                   name: {{ .Values.ocpp.easee.masterPasswordSecret }}
                   key: {{ .Values.ocpp.easee.masterPasswordSecretKey }}
             {{- end }}
+            {{- if .Values.ocpp.amqp.enabled }}
+            - name: "AMQP_URL"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ocpp.amqp.passwordSecret }}
+                  key: "url"
+            {{- end }}
           livenessProbe:
             grpc:
               port: {{ .Values.ocpp.service.apiPort }}
@@ -88,10 +95,15 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+            - name: config
+              mountPath: /bin
       {{- with .Values.ocpp.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-config
       {{- with .Values.ocpp.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,3 +1,5 @@
+mod boot_reason;
+mod booted_event;
 mod connector_status;
 mod connector_status_event;
 

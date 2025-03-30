@@ -569,6 +569,7 @@ impl<'a> Ocpp1_6Interface<'a> {
                     self.charger
                         .event_manager
                         .send_connector_status_event(
+                            self.charger.id.clone(),
                             request.status.into(),
                             request.timestamp.unwrap_or_else(Utc::now),
                             evse_id,

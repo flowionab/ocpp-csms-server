@@ -452,6 +452,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
                 self.charger
                     .event_manager
                     .send_connector_status_event(
+                        self.charger.id.clone(),
                         request.connector_status.into(),
                         request.timestamp,
                         evse_id,

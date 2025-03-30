@@ -7,6 +7,7 @@ use uuid::Uuid;
 pub trait EventHandler: Send + Sync + fmt::Debug {
     async fn send_connector_status_event(
         &self,
+        charger_id: String,
         status: ConnectorStatus,
         timestamp: DateTime<Utc>,
         evse_id: Uuid,

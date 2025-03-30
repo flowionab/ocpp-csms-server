@@ -37,6 +37,7 @@ impl EventManager {
 
     pub async fn send_connector_status_event(
         &self,
+        charger_id: String,
         status: ConnectorStatus,
         timestamp: DateTime<Utc>,
         evse_id: Uuid,
@@ -44,7 +45,13 @@ impl EventManager {
     ) {
         for handler in self.event_handlers.iter() {
             handler
-                .send_connector_status_event(status, timestamp, evse_id, connector_id)
+                .send_connector_status_event(
+                    charger_id.clone(),
+                    status,
+                    timestamp,
+                    evse_id,
+                    connector_id,
+                )
                 .await;
         }
     }

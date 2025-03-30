@@ -57,7 +57,7 @@ impl AmqpEventHandler {
                 EVENT_EXCHANGE_NAME,
                 "",
                 Default::default(),
-                &raw_payload.as_bytes().to_vec(),
+                raw_payload.as_bytes(),
                 properties,
             )
             .await?;
@@ -69,12 +69,14 @@ impl AmqpEventHandler {
 impl EventHandler for AmqpEventHandler {
     async fn send_connector_status_event(
         &self,
+        charger_id: String,
         status: ConnectorStatus,
         timestamp: DateTime<Utc>,
         evse_id: Uuid,
         connector_id: Uuid,
     ) {
         let payload = ConnectorStatusEvent {
+            charger_id,
             connector_id,
             evse_id,
             status,
