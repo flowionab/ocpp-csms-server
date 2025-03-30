@@ -96,7 +96,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
             - name: config
-              mountPath: /bin/config.toml
+              mountPath: /bin/config
       volumes:
       {{- with .Values.ocpp.volumes }}
         {{- toYaml . | nindent 8 }}
