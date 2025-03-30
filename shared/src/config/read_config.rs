@@ -11,7 +11,7 @@ pub async fn read_config() -> Result<Config, Box<dyn std::error::Error + Send + 
                 Ok(config) => Ok(config),
                 Err(e) => {
                     error!("error while parsing config file");
-                    eprintln!("{}", e.to_string());
+                    eprintln!("{}", e);
                     Err("Invalid config file".into())
                 }
             }
