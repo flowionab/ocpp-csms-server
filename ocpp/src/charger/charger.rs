@@ -373,9 +373,49 @@ impl Charger {
     }
 
     #[instrument(skip_all)]
-    pub async fn change_availability(
+    pub async fn change_charger_availability(&mut self, available: bool) -> Result<(), Status> {
+        let protocol = self.protocol.ok_or_else(|| {
+            Status::failed_precondition("The charger has not picked a ocpp protocol yet")
+        })?;
+
+        match protocol {
+            OcppProtocol::Ocpp1_6 => {
+                let response = self
+                    .ocpp1_6()
+                    .send_change_availability(ChangeAvailabilityRequest {
+                        connector_id: 0,
+                        kind: if available {
+                            AvailabilityType::Operative
+                        } else {
+                            AvailabilityType::Inoperative
+                        },
+                    })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to change availability due to internal error"
+                        );
+                        Status::internal("Failed to change availability, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
+
+                match response.status {
+                    AvailabilityStatus::Accepted => Ok(()),
+                    AvailabilityStatus::Scheduled => Ok(()),
+                    AvailabilityStatus::Rejected => {
+                        Err(Status::cancelled("Charger could not change availability"))
+                    }
+                }
+            }
+            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+        }
+    }
+
+    #[instrument(skip_all)]
+    pub async fn change_evse_availability(
         &mut self,
-        outlet_id: &str,
+        evse_id: &str,
         available: bool,
     ) -> Result<(), Status> {
         let protocol = self.protocol.ok_or_else(|| {
@@ -387,8 +427,68 @@ impl Charger {
             .evses
             .clone()
             .into_iter()
-            .find(|i| i.id.to_string() == outlet_id)
-            .ok_or_else(|| Status::not_found("Outlet not found"))?;
+            .find(|i| i.id.to_string() == evse_id)
+            .ok_or_else(|| Status::not_found("Evse not found"))?;
+
+        match protocol {
+            OcppProtocol::Ocpp1_6 => {
+                let response = self
+                    .ocpp1_6()
+                    .send_change_availability(ChangeAvailabilityRequest {
+                        connector_id: outlet.ocpp_evse_id,
+                        kind: if available {
+                            AvailabilityType::Operative
+                        } else {
+                            AvailabilityType::Inoperative
+                        },
+                    })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to change availability due to internal error"
+                        );
+                        Status::internal("Failed to change availability, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
+
+                match response.status {
+                    AvailabilityStatus::Accepted => Ok(()),
+                    AvailabilityStatus::Scheduled => Ok(()),
+                    AvailabilityStatus::Rejected => {
+                        Err(Status::cancelled("Charger could not change availability"))
+                    }
+                }
+            }
+            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+        }
+    }
+
+    #[instrument(skip_all)]
+    pub async fn change_connector_availability(
+        &mut self,
+        evse_id: &str,
+        _connector_id: &str,
+        available: bool,
+    ) -> Result<(), Status> {
+        let protocol = self.protocol.ok_or_else(|| {
+            Status::failed_precondition("The charger has not picked a ocpp protocol yet")
+        })?;
+
+        let outlet = self
+            .data
+            .evses
+            .clone()
+            .into_iter()
+            .find(|i| i.id.to_string() == evse_id)
+            .ok_or_else(|| Status::not_found("Evse not found"))?;
+
+        let _connector = outlet
+            .connectors
+            .clone()
+            .into_iter()
+            .find(|i| i.id.to_string() == evse_id)
+            .ok_or_else(|| Status::not_found("Connector not found"))?;
 
         match protocol {
             OcppProtocol::Ocpp1_6 => {

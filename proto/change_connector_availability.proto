@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message ChangeConnectorAvailabilityRequest {
+  string charger_id = 1;
+  string evse_id = 2;
+  string connector_id = 3;
+  bool operative = 4;
+}
+
+message ChangeConnectorAvailabilityResponse {
+}

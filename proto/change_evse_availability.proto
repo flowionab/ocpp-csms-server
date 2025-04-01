@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message ChangeEvseAvailabilityRequest {
+  string charger_id = 1;
+  string evse_id = 2;
+  bool operative = 3;
+}
+
+message ChangeEvseAvailabilityResponse {
+}

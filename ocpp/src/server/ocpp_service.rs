@@ -3,11 +3,13 @@ use crate::ocpp_csms_server::ocpp_server::Ocpp;
 use crate::ocpp_csms_server::reboot_charger_request::RebootType;
 use crate::ocpp_csms_server::{
     CancelOutletReservationRequest, CancelOutletReservationResponse,
+    ChangeChargerAvailabilityRequest, ChangeChargerAvailabilityResponse,
+    ChangeConnectorAvailabilityRequest, ChangeConnectorAvailabilityResponse,
+    ChangeEvseAvailabilityRequest, ChangeEvseAvailabilityResponse,
     ChangeOcpp16configurationValueRequest, ChangeOcpp16configurationValueResponse,
-    ChangeOutletAvailabilityRequest, ChangeOutletAvailabilityResponse, ClearChargerCacheRequest,
-    ClearChargerCacheResponse, RebootChargerRequest, RebootChargerResponse,
-    StartTransactionRequest, StartTransactionResponse, StopTransactionRequest,
-    StopTransactionResponse,
+    ClearChargerCacheRequest, ClearChargerCacheResponse, RebootChargerRequest,
+    RebootChargerResponse, StartTransactionRequest, StartTransactionResponse,
+    StopTransactionRequest, StopTransactionResponse,
 };
 use tonic::{Request, Response, Status};
 
@@ -85,18 +87,59 @@ impl Ocpp for OcppService {
         }
     }
 
-    async fn change_outlet_availability(
+    async fn change_charger_availability(
         &self,
-        request: Request<ChangeOutletAvailabilityRequest>,
-    ) -> Result<Response<ChangeOutletAvailabilityResponse>, Status> {
+        request: Request<ChangeChargerAvailabilityRequest>,
+    ) -> Result<Response<ChangeChargerAvailabilityResponse>, Status> {
         let payload = request.into_inner();
         match self.charger_pool.get(&payload.charger_id).await {
             Some(charger) => {
                 let mut lock = charger.lock().await;
-                lock.change_availability(&payload.outlet_id, payload.available)
+                lock.change_charger_availability(payload.operative).await?;
+
+                Ok(Response::new(ChangeChargerAvailabilityResponse {}))
+            }
+            None => Err(Status::not_found(
+                "A charger with this id is not connected to this instance",
+            )),
+        }
+    }
+
+    async fn change_evse_availability(
+        &self,
+        request: Request<ChangeEvseAvailabilityRequest>,
+    ) -> Result<Response<ChangeEvseAvailabilityResponse>, Status> {
+        let payload = request.into_inner();
+        match self.charger_pool.get(&payload.charger_id).await {
+            Some(charger) => {
+                let mut lock = charger.lock().await;
+                lock.change_evse_availability(&payload.evse_id, payload.operative)
                     .await?;
 
-                Ok(Response::new(ChangeOutletAvailabilityResponse {}))
+                Ok(Response::new(ChangeEvseAvailabilityResponse {}))
+            }
+            None => Err(Status::not_found(
+                "A charger with this id is not connected to this instance",
+            )),
+        }
+    }
+
+    async fn change_connector_availability(
+        &self,
+        request: Request<ChangeConnectorAvailabilityRequest>,
+    ) -> Result<Response<ChangeConnectorAvailabilityResponse>, Status> {
+        let payload = request.into_inner();
+        match self.charger_pool.get(&payload.charger_id).await {
+            Some(charger) => {
+                let mut lock = charger.lock().await;
+                lock.change_connector_availability(
+                    &payload.evse_id,
+                    &payload.connector_id,
+                    payload.operative,
+                )
+                .await?;
+
+                Ok(Response::new(ChangeConnectorAvailabilityResponse {}))
             }
             None => Err(Status::not_found(
                 "A charger with this id is not connected to this instance",

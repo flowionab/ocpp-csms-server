@@ -2,11 +2,13 @@ use crate::ocpp_csms_server::api_server::Api;
 use crate::ocpp_csms_server::ocpp_client::OcppClient;
 use crate::ocpp_csms_server::{
     CancelOutletReservationRequest, CancelOutletReservationResponse,
-    ChangeOcpp16configurationValueRequest, ChangeOcpp16configurationValueResponse,
-    ChangeOutletAvailabilityRequest, ChangeOutletAvailabilityResponse, Charger, ChargerSummary,
-    ClearChargerCacheRequest, ClearChargerCacheResponse, GetChargerRequest, GetChargerResponse,
-    GetChargersRequest, GetChargersResponse, Ocpp16configuration, Outlet, RebootChargerRequest,
-    RebootChargerResponse, StartTransactionRequest, StartTransactionResponse,
+    ChangeChargerAvailabilityRequest, ChangeChargerAvailabilityResponse,
+    ChangeConnectorAvailabilityRequest, ChangeConnectorAvailabilityResponse,
+    ChangeEvseAvailabilityRequest, ChangeEvseAvailabilityResponse,
+    ChangeOcpp16configurationValueRequest, ChangeOcpp16configurationValueResponse, Charger,
+    ChargerSummary, ClearChargerCacheRequest, ClearChargerCacheResponse, Evse, GetChargerRequest,
+    GetChargerResponse, GetChargersRequest, GetChargersResponse, Ocpp16configuration,
+    RebootChargerRequest, RebootChargerResponse, StartTransactionRequest, StartTransactionResponse,
     StopTransactionRequest, StopTransactionResponse,
 };
 use shared::{ChargerConnectionInfo, DataStore};
@@ -100,10 +102,10 @@ impl Api for ApiService {
                     })
                     .unwrap_or_default(),
                 status: charger.status.map(|i| i.to_string()),
-                outlets: charger
+                evses: charger
                     .evses
                     .into_iter()
-                    .map(|data| Outlet {
+                    .map(|data| Evse {
                         id: data.id.to_string(),
                         ocpp_connector_id: data.ocpp_evse_id,
                         status: data.status.map(|i| i.to_string()),
@@ -179,13 +181,33 @@ impl Api for ApiService {
     }
 
     #[instrument]
-    async fn change_outlet_availability(
+    async fn change_charger_availability(
         &self,
-        request: Request<ChangeOutletAvailabilityRequest>,
-    ) -> Result<Response<ChangeOutletAvailabilityResponse>, Status> {
+        request: Request<ChangeChargerAvailabilityRequest>,
+    ) -> Result<Response<ChangeChargerAvailabilityResponse>, Status> {
         let payload = request.into_inner();
         let mut client = self.get_client(&payload.charger_id).await?;
-        client.change_outlet_availability(payload).await
+        client.change_charger_availability(payload).await
+    }
+
+    #[instrument]
+    async fn change_evse_availability(
+        &self,
+        request: Request<ChangeEvseAvailabilityRequest>,
+    ) -> Result<Response<ChangeEvseAvailabilityResponse>, Status> {
+        let payload = request.into_inner();
+        let mut client = self.get_client(&payload.charger_id).await?;
+        client.change_evse_availability(payload).await
+    }
+
+    #[instrument]
+    async fn change_connector_availability(
+        &self,
+        request: Request<ChangeConnectorAvailabilityRequest>,
+    ) -> Result<Response<ChangeConnectorAvailabilityResponse>, Status> {
+        let payload = request.into_inner();
+        let mut client = self.get_client(&payload.charger_id).await?;
+        client.change_connector_availability(payload).await
     }
 
     #[instrument]

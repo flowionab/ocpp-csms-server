@@ -4,7 +4,9 @@ import "stop_transaction.proto";
 import "start_transaction.proto";
 import "clear_charger_cache.proto";
 import "change_ocpp_1_6_configuration_value.proto";
-import "change_outlet_availability.proto";
+import "change_charger_availability.proto";
+import "change_evse_availability.proto";
+import "change_connector_availability.proto";
 import "cancel_outlet_reservation.proto";
 
 package ocpp_csms_server;
@@ -14,7 +16,9 @@ service Api {
   rpc GetChargers(GetChargersRequest) returns (GetChargersResponse) {}
   rpc RebootCharger(RebootChargerRequest) returns (RebootChargerResponse) {}
   rpc CancelOutletReservation(CancelOutletReservationRequest) returns (CancelOutletReservationResponse) {}
-  rpc ChangeOutletAvailability(ChangeOutletAvailabilityRequest) returns (ChangeOutletAvailabilityResponse) {}
+  rpc ChangeChargerAvailability(ChangeChargerAvailabilityRequest) returns (ChangeChargerAvailabilityResponse) {}
+  rpc ChangeEvseAvailability(ChangeEvseAvailabilityRequest) returns (ChangeEvseAvailabilityResponse) {}
+  rpc ChangeConnectorAvailability(ChangeConnectorAvailabilityRequest) returns (ChangeConnectorAvailabilityResponse) {}
   rpc ChangeOcpp1_6ConfigurationValue(ChangeOcpp1_6ConfigurationValueRequest) returns (ChangeOcpp1_6ConfigurationValueResponse) {}
   rpc ClearChargerCache(ClearChargerCacheRequest) returns (ClearChargerCacheResponse) {}
   rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
@@ -52,7 +56,7 @@ message Charger {
   optional string imsi = 7;
   repeated Ocpp1_6Configuration ocpp1_6_configuration_values = 8;
   optional string status = 9;
-  repeated Outlet outlets = 10;
+  repeated Evse evses = 10;
   bool is_online = 11;
   string last_seen = 12;
   string node_address = 13;
@@ -71,7 +75,7 @@ message Ocpp1_6Configuration {
   bool readonly = 3;
 }
 
-message Outlet {
+message Evse {
   string id = 1;
   uint32 ocpp_connector_id = 2;
   optional string status = 3;

@@ -1,7 +1,9 @@
 syntax = "proto3";
 import "reboot_charger.proto";
 import "cancel_outlet_reservation.proto";
-import "change_outlet_availability.proto";
+import "change_charger_availability.proto";
+import "change_evse_availability.proto";
+import "change_connector_availability.proto";
 import "change_ocpp_1_6_configuration_value.proto";
 import "clear_charger_cache.proto";
 import "stop_transaction.proto";
@@ -12,7 +14,9 @@ package ocpp_csms_server;
 service Ocpp {
   rpc RebootCharger(RebootChargerRequest) returns (RebootChargerResponse) {}
   rpc CancelOutletReservation(CancelOutletReservationRequest) returns (CancelOutletReservationResponse) {}
-  rpc ChangeOutletAvailability(ChangeOutletAvailabilityRequest) returns (ChangeOutletAvailabilityResponse) {}
+  rpc ChangeChargerAvailability(ChangeChargerAvailabilityRequest) returns (ChangeChargerAvailabilityResponse) {}
+  rpc ChangeEvseAvailability(ChangeEvseAvailabilityRequest) returns (ChangeEvseAvailabilityResponse) {}
+  rpc ChangeConnectorAvailability(ChangeConnectorAvailabilityRequest) returns (ChangeConnectorAvailabilityResponse) {}
   rpc ChangeOcpp1_6ConfigurationValue(ChangeOcpp1_6ConfigurationValueRequest) returns (ChangeOcpp1_6ConfigurationValueResponse) {}
   rpc ClearChargerCache(ClearChargerCacheRequest) returns (ClearChargerCacheResponse) {}
   rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
