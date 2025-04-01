@@ -1,7 +1,7 @@
 "use client"
 
 import {useCallback, useState} from "react";
-import {changeOutletAvailability} from "@/app/chargers/[chargerId]/changeOutletAvailability";
+import {changeEvseAvailability} from "@/app/chargers/[chargerId]/changeEvseAvailability";
 
 export default function ChangeOutletAvailabilityButton({chargerId, outletId, status}: {
     chargerId: string,
@@ -11,7 +11,7 @@ export default function ChangeOutletAvailabilityButton({chargerId, outletId, sta
     const [loading, setLoading] = useState(false);
     const callback = useCallback(() => {
         setLoading(true)
-        changeOutletAvailability(chargerId, outletId, status === "Unavailable").finally(() => setLoading(false))
+        changeEvseAvailability(chargerId, outletId, status === "Unavailable").finally(() => setLoading(false))
     }, [setLoading, chargerId, outletId, status])
 
     const message = status === "Unavailable" ? "Enable outlet" : "Disable outlet"

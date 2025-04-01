@@ -35,12 +35,12 @@ export default async function Page(props: {
 
         <h3 className={"text-3xl mt-8 mb-4"}>Outlets</h3>
         {
-            charger.outlets.map(outlet => (
-                <div key={outlet.id} className={"rounded-lg dark:bg-neutral-800 shadow-md p-4 mb-4 flex flex-col"}>
-                    <span className={"text-xl"}>Outlet {outlet.ocppConnectorId} - {outlet.status ?? "Unknown"}</span>
-                    <StartTransactionButton chargerId={chargerId} outletId={outlet.id}/>
-                    <ChangeOutletAvailabilityButton chargerId={chargerId} outletId={outlet.id} status={outlet.status}/>
-                    <span className={"text-xs dark:text-gray-400"}>{outlet.id}</span>
+            charger.evses.map(evse => (
+                <div key={evse.id} className={"rounded-lg dark:bg-neutral-800 shadow-md p-4 mb-4 flex flex-col"}>
+                    <span className={"text-xl"}>Outlet {evse.ocppConnectorId} - {evse.status ?? "Unknown"}</span>
+                    <StartTransactionButton chargerId={chargerId} outletId={evse.id}/>
+                    <ChangeOutletAvailabilityButton chargerId={chargerId} outletId={evse.id} status={evse.status}/>
+                    <span className={"text-xs dark:text-gray-400"}>{evse.id}</span>
                 </div>))
         }
     </div>

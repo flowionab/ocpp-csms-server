@@ -2,9 +2,9 @@
 
 import {apiClient} from "@/app/api/grpc";
 
-export async function changeOutletAvailability(chargerId: string, outletId: string, available: boolean) {
+export async function changeEvseAvailability(chargerId: string, evseId: string, operative: boolean) {
     await new Promise<void>((resolve, reject) => {
-        apiClient.changeOutletAvailability({chargerId, outletId, available}, (error) => {
+        apiClient.changeEvseAvailability({chargerId, evseId, operative}, (error) => {
             if (error) {
                 reject(error)
             } else {
