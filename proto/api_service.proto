@@ -12,6 +12,7 @@ import "cancel_outlet_reservation.proto";
 package ocpp_csms_server;
 
 service Api {
+  rpc CreateCharger(CreateChargerRequest) returns (CreateChargerResponse) {}
   rpc GetCharger(GetChargerRequest) returns (GetChargerResponse) {}
   rpc GetChargers(GetChargersRequest) returns (GetChargersResponse) {}
   rpc RebootCharger(RebootChargerRequest) returns (RebootChargerResponse) {}
@@ -23,6 +24,14 @@ service Api {
   rpc ClearChargerCache(ClearChargerCacheRequest) returns (ClearChargerCacheResponse) {}
   rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
   rpc StopTransaction(StopTransactionRequest) returns (StopTransactionResponse) {}
+}
+
+message CreateChargerRequest {
+  string charger_id = 1;
+}
+
+message CreateChargerResponse{
+  Charger charger = 1;
 }
 
 message GetChargerRequest {

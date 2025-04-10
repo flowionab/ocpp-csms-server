@@ -6,10 +6,11 @@ use crate::ocpp_csms_server::{
     ChangeConnectorAvailabilityRequest, ChangeConnectorAvailabilityResponse,
     ChangeEvseAvailabilityRequest, ChangeEvseAvailabilityResponse,
     ChangeOcpp16configurationValueRequest, ChangeOcpp16configurationValueResponse, Charger,
-    ChargerSummary, ClearChargerCacheRequest, ClearChargerCacheResponse, Evse, GetChargerRequest,
-    GetChargerResponse, GetChargersRequest, GetChargersResponse, Ocpp16configuration,
-    RebootChargerRequest, RebootChargerResponse, StartTransactionRequest, StartTransactionResponse,
-    StopTransactionRequest, StopTransactionResponse,
+    ChargerSummary, ClearChargerCacheRequest, ClearChargerCacheResponse, CreateChargerRequest,
+    CreateChargerResponse, Evse, GetChargerRequest, GetChargerResponse, GetChargersRequest,
+    GetChargersResponse, Ocpp16configuration, RebootChargerRequest, RebootChargerResponse,
+    StartTransactionRequest, StartTransactionResponse, StopTransactionRequest,
+    StopTransactionResponse,
 };
 use shared::{ChargerConnectionInfo, DataStore};
 use tokio::try_join;
@@ -60,6 +61,74 @@ impl ApiService {
 
 #[tonic::async_trait]
 impl Api for ApiService {
+    async fn create_charger(
+        &self,
+        request: Request<CreateChargerRequest>,
+    ) -> Result<Response<CreateChargerResponse>, Status> {
+        let payload = request.into_inner();
+
+        self.data_store
+            .create_charger(&payload.charger_id)
+            .await
+            .map_err(|error| {
+                error!(
+                    error_message = error.to_string(),
+                    "could not create charger"
+                );
+                Status::internal("Could not create charger")
+            })?;
+
+        let (charger, connection_info) = try_join!(
+            self.data_store.get_charger_data_by_id(&payload.charger_id),
+            self.data_store
+                .get_charger_connection_info(&payload.charger_id)
+        )
+        .map_err(|error| {
+            error!(error_message = error.to_string(), "could not get charger");
+            Status::internal("Could not get charger")
+        })?;
+
+        let connection_info = connection_info.unwrap_or_default();
+
+        Ok(Response::new(CreateChargerResponse {
+            charger: charger.map(|charger| Charger {
+                id: charger.id,
+                serial_number: charger.serial_number,
+                model: charger.model,
+                vendor: charger.vendor,
+                firmware_version: charger.firmware_version,
+                iccid: charger.iccid,
+                imsi: charger.imsi,
+                ocpp1_6_configuration_values: charger
+                    .ocpp1_6configuration
+                    .map(|values| {
+                        values
+                            .iter()
+                            .map(|(key, value)| Ocpp16configuration {
+                                key: key.to_string(),
+                                value: value.value.clone(),
+                                readonly: value.read_only,
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+                status: charger.status.map(|i| i.to_string()),
+                evses: charger
+                    .evses
+                    .into_iter()
+                    .map(|data| Evse {
+                        id: data.id.to_string(),
+                        ocpp_connector_id: data.ocpp_evse_id,
+                        status: data.status.map(|i| i.to_string()),
+                    })
+                    .collect(),
+                is_online: connection_info.is_online,
+                last_seen: connection_info.last_seen.to_rfc3339(),
+                node_address: connection_info.node_address,
+            }),
+        }))
+    }
+
     #[instrument]
     async fn get_charger(
         &self,

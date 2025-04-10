@@ -1,5 +1,6 @@
 use crate::charger_data::ChargerData;
 use crate::ChargerConnectionInfo;
+use std::error::Error;
 use std::fmt::Debug;
 
 #[async_trait::async_trait]
@@ -51,4 +52,9 @@ pub trait DataStore: Send + Sync + Debug {
         is_online: bool,
         node_address: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+    async fn create_charger(
+        &self,
+        charger_id: &str,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
 }

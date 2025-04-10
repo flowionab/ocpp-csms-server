@@ -190,6 +190,23 @@ impl DataStore for SqlxDataStore<Postgres> {
         .await?;
         Ok(())
     }
+
+    async fn create_charger(
+        &self,
+        charger_id: &str,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query!(
+            "
+            INSERT INTO chargers (id)
+            VALUES ($1)
+        ",
+            charger_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[derive(FromRow, Debug, Clone)]

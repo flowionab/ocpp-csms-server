@@ -16,6 +16,19 @@ impl OcppApiClient {
         let client = ApiClient::connect(url.to_string()).await?;
         Ok(Self { client })
     }
+    pub async fn create_charger(
+        &self,
+        charger_id: &str,
+    ) -> Result<Option<Charger>, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let mut client = self.client.clone();
+        let request = ocpp_csms_server::CreateChargerRequest {
+            charger_id: charger_id.to_string(),
+        };
+
+        let response = client.create_charger(request).await?;
+
+        Ok(response.into_inner().charger.map(Charger::from))
+    }
 
     /// Retrieves a charger by its ID.
     pub async fn get_charger(
