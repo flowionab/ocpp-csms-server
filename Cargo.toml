@@ -6,3 +6,10 @@ members = [
     "shared",
     "sdk"
 ]
+
+[workspace.package]
+description = "A workspace for the OCPP CSMS server"
+authors = ["Joatin Granlund <granlundjoatin@icloud.com>"]
+repository = "https://github.com/flowionab/ocpp-csms-server"
+license = "MIT, APACHE"
+version = "0.1.14"

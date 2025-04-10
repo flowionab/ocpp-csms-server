@@ -1,8 +1,11 @@
 [package]
 edition = '2021'
 name = "ocpp-csms-server-sdk"
-version = "0.1.0"
 publish = true
+version = "0.1.0"
+description.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 futures = "0.3"
