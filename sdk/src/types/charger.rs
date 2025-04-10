@@ -1,5 +1,5 @@
 use crate::ocpp_csms_server;
-use crate::ocpp_csms_server::{Evse, Ocpp16configuration};
+use crate::types::Evse;
 
 #[derive(Debug, Clone, Default)]
 pub struct Charger {
@@ -10,7 +10,7 @@ pub struct Charger {
     pub firmware_version: Option<String>,
     pub iccid: Option<String>,
     pub imsi: Option<String>,
-    pub ocpp1_6_configuration_values: Vec<Ocpp16configuration>,
+    // pub ocpp1_6_configuration_values: Vec<Ocpp16configuration>,
     pub status: Option<String>,
     pub evses: Vec<Evse>,
     pub is_online: bool,
@@ -27,7 +27,7 @@ impl From<ocpp_csms_server::Charger> for Charger {
             firmware_version: value.firmware_version,
             iccid: value.iccid,
             imsi: value.imsi,
-            ocpp1_6_configuration_values: value.ocpp1_6_configuration_values,
+            // ocpp1_6_configuration_values: value.ocpp1_6_configuration_values,
             status: value.status,
             evses: value.evses.into_iter().map(Evse::from).collect(),
             is_online: value.is_online,
