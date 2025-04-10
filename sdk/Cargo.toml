@@ -6,6 +6,7 @@ version = "0.1.0"
 description.workspace = true
 license.workspace = true
 repository.workspace = true
+keywords = ["ocpp", "csms"]
 
 [dependencies]
 futures = "0.3"
