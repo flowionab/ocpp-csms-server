@@ -5,15 +5,17 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '5'
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-  name: ocpp-csms-server
+  name: {{ include "ocpp-csms-server.ocppFullname" . }}
   namespace: monitoring
+  labels:
+    {{ include "ocpp-csms-server.ocppLabels" . | nindent 4 }}
 spec:
   namespaceSelector:
     matchNames:
-      - default
+      - {{ .Release.Namespace }}
   selector:
     matchLabels:
-      app: ocpp-csms-server
+      {{- include "ocpp-csms-server.ocppSelectorLabels" . | nindent 6 }}
   endpoints:
     - port: http-metrics
       interval: 15s
