@@ -4,6 +4,7 @@ use poem::{
 };
 use tracing::warn;
 
+#[allow(clippy::result_large_err)]
 pub fn extract_protocol_header(headers: &HeaderMap) -> Result<String, Response> {
     if let Some(protocol_header) = headers.get("Sec-WebSocket-Protocol") {
         if let Ok(protocol_header_str) = protocol_header.to_str() {

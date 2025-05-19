@@ -7,6 +7,7 @@ use std::str::from_utf8;
 use tracing::info;
 use tracing::log::warn;
 
+#[allow(clippy::result_large_err)]
 pub fn extract_password(header_map: &HeaderMap) -> Result<Option<String>, Response> {
     match header_map.get(AUTHORIZATION) {
         None => {
@@ -20,6 +21,7 @@ pub fn extract_password(header_map: &HeaderMap) -> Result<Option<String>, Respon
     }
 }
 
+#[allow(clippy::result_large_err)]
 pub fn parse_authorization_header_value(header: &HeaderValue) -> Result<String, Response> {
     let raw_header = extract_raw_value_from_header_value(header)?;
     let encoded = get_encoded_part(&raw_header)?;
@@ -28,6 +30,7 @@ pub fn parse_authorization_header_value(header: &HeaderValue) -> Result<String, 
     Ok(password)
 }
 
+#[allow(clippy::result_large_err)]
 pub fn get_encoded_part(value: &str) -> Result<String, Response> {
     let splits = value.split(" ").collect::<Vec<_>>();
     match splits.first() {
@@ -58,6 +61,7 @@ pub fn get_encoded_part(value: &str) -> Result<String, Response> {
     }
 }
 
+#[allow(clippy::result_large_err)]
 pub fn extract_raw_value_from_header_value(header: &HeaderValue) -> Result<String, Response> {
     let value = header.to_str().map_err(|_e| {
         warn!("Authorization header was provided, but the content was not a valid string");
@@ -68,6 +72,7 @@ pub fn extract_raw_value_from_header_value(header: &HeaderValue) -> Result<Strin
     Ok(value.to_string())
 }
 
+#[allow(clippy::result_large_err)]
 pub fn decode_header_value(value: &str) -> Result<String, Response> {
     let bytes = BASE64_STANDARD.decode(value).map_err(|_e| {
         warn!(
@@ -89,6 +94,7 @@ pub fn decode_header_value(value: &str) -> Result<String, Response> {
     Ok(string.to_string())
 }
 
+#[allow(clippy::result_large_err)]
 pub fn split_and_get_password(value: &str) -> Result<String, Response> {
     let splits = value.split(":").collect::<Vec<_>>();
     match splits.get(1) {
