@@ -710,9 +710,9 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
 name = "chrono"
-version = "0.4.38"
+version = "0.4.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
+checksum = "c469d952047f47f91b68d1cba3f10d63c11d73e4636f24f08daf0278abf01c4d"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
@@ -720,7 +720,7 @@ dependencies = [
  "num-traits",
  "serde",
  "wasm-bindgen",
- "windows-targets 0.52.6",
+ "windows-link",
 ]
 
 [[package]]
@@ -2024,7 +2024,7 @@ dependencies = [
  "poem",
  "prost",
  "rand 0.9.0",
- "rust-ocpp",
+ "rust-ocpp 3.0.1",
  "serde",
  "serde_json",
  "shared",
@@ -2046,7 +2046,7 @@ checksum = "264c4251e86fc122258287da48f989bc1c2aac1553307cb9d461bd3f1f3d86ae"
 dependencies = [
  "base64 0.22.1",
  "futures",
- "rust-ocpp",
+ "rust-ocpp 2.0.0",
  "rustls",
  "serde",
  "serde_json",
@@ -2803,6 +2803,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-ocpp"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9be68bbc04c9a00e7bd39f237caec3335b7897da4c76d6f87ce945632b3eff98"
+dependencies = [
+ "chrono",
+ "regex",
+ "rust_decimal",
+ "serde",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "rust_decimal"
 version = "1.36.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3090,7 +3104,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
- "rust-ocpp",
+ "rust-ocpp 3.0.1",
  "serde",
  "serde_json",
  "sqlx",
@@ -4334,6 +4348,12 @@ checksum = "33ab640c8d7e35bf8ba19b884ba838ceb4fba93a4e8c65a9059d08afcfc683d9"
 dependencies = [
  "windows-targets 0.52.6",
 ]
+
+[[package]]
+name = "windows-link"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76840935b766e1b0a05c0066835fb9ec80071d4c09a16f6bd5f7e655e3c14c38"
 
 [[package]]
 name = "windows-sys"

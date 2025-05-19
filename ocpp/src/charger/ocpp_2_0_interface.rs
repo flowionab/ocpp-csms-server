@@ -268,7 +268,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
     ) -> Result<DataTransferResponse, OCPP2_0_1Error> {
         Ok(DataTransferResponse {
             status: DataTransferStatusEnumType::Rejected,
-            data: "".to_string(),
+            data: None,
             status_info: None,
         })
     }

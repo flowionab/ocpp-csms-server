@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 tokio = { version = "1.41.1", features = ["rt", "rt-multi-thread", "macros", "signal"] }
-rust-ocpp = { version = "2.0.0", features = ["v2_0_1", "v1_6"] }
+rust-ocpp = { version = "3.0.0", features = ["v2_0_1", "v1_6"] }
 tracing = "0.1"
 futures = "0.3"
 base64 = "0.22"
