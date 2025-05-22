@@ -40,17 +40,12 @@
       },
       {
         "ordinal": 7,
-        "name": "status",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 8,
         "name": "ocpp1_6configuration",
         "type_info": "Text"
       },
       {
-        "ordinal": 9,
-        "name": "outlets",
+        "ordinal": 8,
+        "name": "evses",
         "type_info": "Text"
       }
     ],
@@ -62,7 +57,6 @@
     },
     "nullable": [
       false,
-      true,
       true,
       true,
       true,
