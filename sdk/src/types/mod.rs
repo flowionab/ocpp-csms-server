@@ -8,6 +8,7 @@ mod reboot_type;
 
 pub use self::charger::Charger;
 pub use self::charger_summary::ChargerSummary;
+pub use self::connector::Connector;
 pub use self::connector_status::ConnectorStatus;
 pub use self::connector_type::ConnectorType;
 pub use self::evse::Evse;
