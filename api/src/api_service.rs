@@ -100,41 +100,7 @@ impl Api for ApiService {
         let connection_info = connection_info.unwrap_or_default();
 
         Ok(Response::new(CreateChargerResponse {
-            charger: charger.map(|charger| Charger {
-                id: charger.id,
-                serial_number: charger.serial_number,
-                model: charger.model,
-                vendor: charger.vendor,
-                firmware_version: charger.firmware_version,
-                iccid: charger.iccid,
-                imsi: charger.imsi,
-                ocpp1_6_configuration_values: charger
-                    .ocpp1_6configuration
-                    .map(|values| {
-                        values
-                            .iter()
-                            .map(|(key, value)| Ocpp16configuration {
-                                key: key.to_string(),
-                                value: value.value.clone(),
-                                readonly: value.read_only,
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                status: charger.status.map(|i| i.to_string()),
-                evses: charger
-                    .evses
-                    .into_iter()
-                    .map(|data| Evse {
-                        id: data.id.to_string(),
-                        ocpp_connector_id: data.ocpp_evse_id,
-                        status: data.status.map(|i| i.to_string()),
-                    })
-                    .collect(),
-                is_online: connection_info.is_online,
-                last_seen: connection_info.last_seen.to_rfc3339(),
-                node_address: connection_info.node_address,
-            }),
+            charger: charger.map(|charger| (charger, connection_info).into()),
         }))
     }
 
@@ -158,41 +124,7 @@ impl Api for ApiService {
         let connection_info = connection_info.unwrap_or_default();
 
         Ok(Response::new(GetChargerResponse {
-            charger: charger.map(|charger| Charger {
-                id: charger.id,
-                serial_number: charger.serial_number,
-                model: charger.model,
-                vendor: charger.vendor,
-                firmware_version: charger.firmware_version,
-                iccid: charger.iccid,
-                imsi: charger.imsi,
-                ocpp1_6_configuration_values: charger
-                    .ocpp1_6configuration
-                    .map(|values| {
-                        values
-                            .iter()
-                            .map(|(key, value)| Ocpp16configuration {
-                                key: key.to_string(),
-                                value: value.value.clone(),
-                                readonly: value.read_only,
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                status: charger.status.map(|i| i.to_string()),
-                evses: charger
-                    .evses
-                    .into_iter()
-                    .map(|data| Evse {
-                        id: data.id.to_string(),
-                        ocpp_connector_id: data.ocpp_evse_id,
-                        status: data.status.map(|i| i.to_string()),
-                    })
-                    .collect(),
-                is_online: connection_info.is_online,
-                last_seen: connection_info.last_seen.to_rfc3339(),
-                node_address: connection_info.node_address,
-            }),
+            charger: charger.map(|charger| (charger, connection_info).into()),
         }))
     }
 
@@ -326,5 +258,105 @@ impl Api for ApiService {
         let payload = request.into_inner();
         let mut client = self.get_client(&payload.charger_id).await?;
         client.stop_transaction(payload).await
+    }
+}
+
+impl From<(shared::ChargerData, ChargerConnectionInfo)> for Charger {
+    fn from((charger, connection_info): (shared::ChargerData, ChargerConnectionInfo)) -> Self {
+        Self {
+            id: charger.id,
+            serial_number: charger.serial_number,
+            model: charger.model,
+            vendor: charger.vendor,
+            firmware_version: charger.firmware_version,
+            iccid: charger.iccid,
+            imsi: charger.imsi,
+            ocpp1_6_configuration_values: charger
+                .ocpp1_6configuration
+                .map(|values| {
+                    values
+                        .iter()
+                        .map(|(key, value)| Ocpp16configuration {
+                            key: key.to_string(),
+                            value: value.value.clone(),
+                            readonly: value.read_only,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+            evses: charger
+                .evses
+                .into_iter()
+                .map(|data| Evse {
+                    id: data.id.to_string(),
+                    ocpp_id: data.ocpp_evse_id,
+                    connectors: data
+                        .connectors
+                        .into_iter()
+                        .map(|connector| crate::ocpp_csms_server::Connector {
+                            id: connector.id.to_string(),
+                            ocpp_id: connector.ocpp_id,
+                            r#type: crate::ocpp_csms_server::ConnectorType::from(
+                                connector.connector_type,
+                            )
+                            .into(),
+                            status: crate::ocpp_csms_server::ConnectorStatus::from(
+                                connector.status.clone(),
+                            )
+                            .into(),
+                            is_active: connector.status != shared::ConnectorStatus::Unavailable
+                                || connector.status != shared::ConnectorStatus::Faulted,
+                            is_car_connected: connector.status == shared::ConnectorStatus::Occupied,
+                            is_reserved: connector.status == shared::ConnectorStatus::Reserved,
+                            is_faulty: connector.status == shared::ConnectorStatus::Faulted,
+                        })
+                        .collect(),
+                })
+                .collect(),
+            is_online: connection_info.is_online,
+            last_seen: connection_info.last_seen.to_rfc3339(),
+            node_address: connection_info.node_address,
+        }
+    }
+}
+
+impl From<shared::ConnectorStatus> for crate::ocpp_csms_server::ConnectorStatus {
+    fn from(status: shared::ConnectorStatus) -> Self {
+        match status {
+            shared::ConnectorStatus::Available => Self::Available,
+            shared::ConnectorStatus::Occupied => Self::Occupied,
+            shared::ConnectorStatus::Reserved => Self::Reserved,
+            shared::ConnectorStatus::Unavailable => Self::Unavailable,
+            shared::ConnectorStatus::Faulted => Self::Faulted,
+        }
+    }
+}
+
+impl From<shared::ConnectorType> for crate::ocpp_csms_server::ConnectorType {
+    fn from(connector_type: shared::ConnectorType) -> Self {
+        match connector_type {
+            shared::ConnectorType::ConnectorCcs1 => Self::ConnectorCcs1,
+            shared::ConnectorType::ConnectorCcs2 => Self::ConnectorCcs2,
+            shared::ConnectorType::ConnectorG105 => Self::ConnectorG105,
+            shared::ConnectorType::ConnectorTesla => Self::ConnectorTesla,
+            shared::ConnectorType::ConnectorType1 => Self::ConnectorType1,
+            shared::ConnectorType::ConnectorType2 => Self::ConnectorType2,
+            shared::ConnectorType::Socket3091p16a => Self::Socket3091p16a,
+            shared::ConnectorType::Socket3091p32a => Self::Socket3091p32a,
+            shared::ConnectorType::Socket3093p16a => Self::Socket3093p16a,
+            shared::ConnectorType::Socket3093p32a => Self::Socket3093p32a,
+            shared::ConnectorType::SocketBs1361 => Self::SocketBs1361,
+            shared::ConnectorType::SocketCee77 => Self::SocketCee77,
+            shared::ConnectorType::SocketType2 => Self::SocketType2,
+            shared::ConnectorType::SocketType3 => Self::SocketType3,
+            shared::ConnectorType::Other1phMax16a => Self::Other1phMax16a,
+            shared::ConnectorType::Other1phOver16a => Self::Other1phOver16a,
+            shared::ConnectorType::Other3ph => Self::Other3ph,
+            shared::ConnectorType::Pantograph => Self::Pantograph,
+            shared::ConnectorType::WirelessInductive => Self::WirelessInductive,
+            shared::ConnectorType::WirelessResonant => Self::WirelessResonant,
+            shared::ConnectorType::Undetermined => Self::Undetermined,
+            shared::ConnectorType::Unknown => Self::Unknown,
+        }
     }
 }

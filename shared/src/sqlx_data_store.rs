@@ -1,11 +1,10 @@
 use crate::charger_data::ChargerData;
 use crate::data_store::DataStore;
-use crate::{ChargerConnectionInfo, Status};
+use crate::ChargerConnectionInfo;
 use chrono::{DateTime, Utc};
 use sqlx::{FromRow, Pool, Postgres};
 use std::error::Error;
 use std::fmt::Debug;
-use std::str::FromStr;
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -41,11 +40,8 @@ impl DataStore for SqlxDataStore<Postgres> {
             ocpp1_6configuration: record
                 .ocpp1_6configuration
                 .map(|j| serde_json::from_str(&j).unwrap_or_default()),
-            status: record
-                .status
-                .map(|i| Status::from_str(&i).unwrap_or_default()),
             evses: record
-                .outlets
+                .evses
                 .map(|j| serde_json::from_str(&j).unwrap_or_default())
                 .unwrap_or_default(),
         }))
@@ -76,11 +72,8 @@ impl DataStore for SqlxDataStore<Postgres> {
                 ocpp1_6configuration: record
                     .ocpp1_6configuration
                     .map(|j| serde_json::from_str(&j).unwrap_or_default()),
-                status: record
-                    .status
-                    .map(|i| Status::from_str(&i).unwrap_or_default()),
                 evses: record
-                    .outlets
+                    .evses
                     .map(|j| serde_json::from_str(&j).unwrap_or_default())
                     .unwrap_or_default(),
             })
@@ -103,11 +96,11 @@ impl DataStore for SqlxDataStore<Postgres> {
         let ocpp1_6configuration = serde_json::to_string(&data.ocpp1_6configuration)?;
         let outlets = serde_json::to_string(&data.evses)?;
         sqlx::query!("
-            INSERT INTO chargers (id, model, vendor, serial_number, firmware_version, iccid, imsi, ocpp1_6configuration, status, outlets)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            INSERT INTO chargers (id, model, vendor, serial_number, firmware_version, iccid, imsi, ocpp1_6configuration, evses)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             ON CONFLICT (id)
-            DO UPDATE SET model = $2, vendor = $3, serial_number = $4, firmware_version = $5, iccid = $6, imsi = $7, ocpp1_6configuration = $8, status = $9, outlets = $10
-        ", data.id, data.model, data.vendor, data.serial_number, data.firmware_version, data.iccid, data.imsi, ocpp1_6configuration, data.status.as_ref().map(|i| i.to_string()), outlets)
+            DO UPDATE SET model = $2, vendor = $3, serial_number = $4, firmware_version = $5, iccid = $6, imsi = $7, ocpp1_6configuration = $8, evses = $9
+        ", data.id, data.model, data.vendor, data.serial_number, data.firmware_version, data.iccid, data.imsi, ocpp1_6configuration, outlets)
             .execute(&self.pool).await?;
         Ok(())
     }

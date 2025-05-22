@@ -1,5 +1,4 @@
 use crate::evse_data::EvseData;
-use crate::status::Status;
 use crate::Ocpp1_6Configuration;
 use sqlx::FromRow;
 
@@ -12,7 +11,6 @@ pub struct ChargerData {
     pub firmware_version: Option<String>,
     pub iccid: Option<String>,
     pub imsi: Option<String>,
-    pub status: Option<Status>,
     pub evses: Vec<EvseData>,
 
     pub ocpp1_6configuration: Option<Ocpp1_6Configuration>,

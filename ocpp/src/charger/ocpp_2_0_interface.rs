@@ -447,7 +447,7 @@ impl<'a> Ocpp2_0_1Interface<'a> {
         {
             let evse_id = evse.id;
             if let Some(connector) = evse.connector_by_ocpp_id_mut(request.connector_id as u32) {
-                connector.status = Some(request.connector_status.clone().into());
+                connector.status = request.connector_status.clone().into();
 
                 self.charger
                     .event_manager

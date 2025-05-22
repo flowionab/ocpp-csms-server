@@ -54,7 +54,7 @@ use rust_ocpp::v1_6::types::{
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use shared::{ConnectorData, EvseData, Ocpp1_6Configuration};
+use shared::{ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Configuration};
 use tokio::sync::oneshot;
 use tracing::{error, info, instrument, warn};
 use uuid::Uuid;
@@ -101,11 +101,11 @@ impl<'a> Ocpp1_6Interface<'a> {
                                     self.charger.data.evses.push(EvseData {
                                         id: Uuid::new_v4(),
                                         ocpp_evse_id: index as u32,
-                                        status: None,
                                         connectors: vec![ConnectorData {
                                             id: Uuid::new_v4(),
-                                            ocpp_connector_id: 1,
-                                            status: None,
+                                            ocpp_id: 1,
+                                            status: ConnectorStatus::Available,
+                                            connector_type: ConnectorType::Unknown,
                                         }],
                                     });
                                 }
@@ -507,63 +507,34 @@ impl<'a> Ocpp1_6Interface<'a> {
         if request.connector_id != 0 {
             if let Some(evse) = self.charger.data.evse_by_ocpp_id_mut(request.connector_id) {
                 let evse_id = evse.id;
-                match request.status {
-                    ChargePointStatus::Available => {
-                        evse.status = Some(shared::Status::Available);
-                    }
-                    ChargePointStatus::Preparing => {
-                        evse.status = Some(shared::Status::Occupied);
-                    }
-                    ChargePointStatus::Charging => {
-                        evse.status = Some(shared::Status::Occupied);
-                    }
-                    ChargePointStatus::SuspendedEVSE => {
-                        evse.status = Some(shared::Status::Occupied);
-                    }
-                    ChargePointStatus::SuspendedEV => {
-                        evse.status = Some(shared::Status::Occupied);
-                    }
-                    ChargePointStatus::Finishing => {
-                        evse.status = Some(shared::Status::Occupied);
-                    }
-                    ChargePointStatus::Reserved => {
-                        evse.status = Some(shared::Status::Reserved);
-                    }
-                    ChargePointStatus::Unavailable => {
-                        evse.status = Some(shared::Status::Unavailable);
-                    }
-                    ChargePointStatus::Faulted => {
-                        evse.status = Some(shared::Status::Faulted);
-                    }
-                }
                 if let Some(connector) = evse.connector_by_ocpp_id_mut(1) {
                     match request.status {
                         ChargePointStatus::Available => {
-                            connector.status = Some(shared::Status::Available);
+                            connector.status = ConnectorStatus::Available;
                         }
                         ChargePointStatus::Preparing => {
-                            connector.status = Some(shared::Status::Occupied);
+                            connector.status = ConnectorStatus::Occupied;
                         }
                         ChargePointStatus::Charging => {
-                            connector.status = Some(shared::Status::Occupied);
+                            connector.status = ConnectorStatus::Occupied;
                         }
                         ChargePointStatus::SuspendedEVSE => {
-                            connector.status = Some(shared::Status::Occupied);
+                            connector.status = ConnectorStatus::Occupied;
                         }
                         ChargePointStatus::SuspendedEV => {
-                            connector.status = Some(shared::Status::Occupied);
+                            connector.status = ConnectorStatus::Occupied;
                         }
                         ChargePointStatus::Finishing => {
-                            connector.status = Some(shared::Status::Occupied);
+                            connector.status = ConnectorStatus::Occupied;
                         }
                         ChargePointStatus::Reserved => {
-                            connector.status = Some(shared::Status::Reserved);
+                            connector.status = ConnectorStatus::Reserved;
                         }
                         ChargePointStatus::Unavailable => {
-                            connector.status = Some(shared::Status::Unavailable);
+                            connector.status = ConnectorStatus::Unavailable;
                         }
                         ChargePointStatus::Faulted => {
-                            connector.status = Some(shared::Status::Faulted);
+                            connector.status = ConnectorStatus::Faulted;
                         }
                     }
                     self.charger

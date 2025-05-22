@@ -2,7 +2,7 @@
 edition = '2021'
 name = "ocpp-csms-server-sdk"
 publish = true
-version = "0.1.2"
+version.workspace = true
 description.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -64,11 +64,10 @@ message Charger {
   optional string iccid = 6;
   optional string imsi = 7;
   repeated Ocpp1_6Configuration ocpp1_6_configuration_values = 8;
-  optional string status = 9;
-  repeated Evse evses = 10;
-  bool is_online = 11;
-  string last_seen = 12;
-  string node_address = 13;
+  repeated Evse evses = 9;
+  bool is_online = 10;
+  string last_seen = 11;
+  string node_address = 12;
 }
 
 message ChargerSummary {
@@ -86,7 +85,52 @@ message Ocpp1_6Configuration {
 
 message Evse {
   string id = 1;
-  uint32 ocpp_connector_id = 2;
-  optional string status = 3;
+  uint32 ocpp_id = 2;
+  repeated Connector connectors = 4;
 }
 
+message Connector {
+  string id = 1;
+  uint32 ocpp_id = 2;
+  ConnectorType type = 3;
+  ConnectorStatus status = 4;
+  bool is_active = 5;
+  bool is_car_connected = 6;
+  bool is_reserved = 7;
+  bool is_faulty = 8;
+}
+
+enum ConnectorStatus {
+  CONNECTOR_STATUS_UNSPECIFIED = 0;
+  CONNECTOR_STATUS_AVAILABLE = 1;
+  CONNECTOR_STATUS_OCCUPIED = 2;
+  CONNECTOR_STATUS_RESERVED = 3;
+  CONNECTOR_STATUS_UNAVAILABLE = 4;
+  CONNECTOR_STATUS_FAULTED = 5;
+}
+
+enum ConnectorType {
+  CONNECTOR_UNSPECIFIED = 0;
+  CONNECTOR_CCS1 = 1; // Combined Charging System 1 (captive cabled) a.k.a. Combo 1
+  CONNECTOR_CCS2 = 2; // Combined Charging System 2 (captive cabled) a.k.a. Combo 2
+  CONNECTOR_G105 = 3; // JARI G105-1993 (captive cabled) a.k.a. CHAdeMO
+  CONNECTOR_TESLA = 4; // Tesla Connector (captive cabled)
+  CONNECTOR_TYPE_1 = 5; // IEC62196-2 Type 1 connector (captive cabled) a.k.a. J1772
+  CONNECTOR_TYPE_2 = 6; // IEC62196-2 Type 2 connector (captive cabled) a.k.a. Mennekes connector
+  SOCKET_309_1P_16A = 7; // 16A 1 phase IEC60309 socket
+  SOCKET_309_1P_32A = 8; // 32A 1 phase IEC60309 socket
+  SOCKET_309_3P_16A = 9; // 16A 3 phase IEC60309 socket
+  SOCKET_309_3P_32A = 10; // 32A 3 phase IEC60309 socket
+  SOCKET_BS1361 = 11; // UK domestic socket a.k.a. 13Amp
+  SOCKET_CEE_7_7 = 12; // CEE 7/7 16A socket. May represent 7/4 & 7/5 a.k.a Schuko
+  SOCKET_TYPE2 = 13; // IEC62196-2 Type 2 socket a.k.a. Mennekes connector
+  SOCKET_TYPE3 = 14; // IEC62196-2 Type 2 socket a.k.a. Scame
+  OTHER_1PH_MAX_16A = 15; // Other single phase (domestic) sockets not mentioned above, rated at no more than 16A. CEE7/17, AS3112, NEMA 5-15, NEMA 5-20, JISC8303, TIS166, SI 32, CPCS-CCC, SEV1011, etc.
+  OTHER_1PH_OVER_16A = 16; // Other single phase sockets not mentioned above (over 16A)
+  OTHER_3PH = 17; // Other 3 phase sockets not mentioned above. NEMA14-30, NEMA14-50.
+  PANTOGRAPH = 18; // Pantograph connector
+  WIRELESS_INDUCTIVE = 19; // Wireless inductively coupled connection (generic)
+  WIRELESS_RESONANT = 20; // Wireless resonant coupled connection (generic)
+  UNDETERMINED = 21; // Yet to be determined (e.g. before plugged in)
+  UNKNOWN = 22; // Unknown; not determinable
+}

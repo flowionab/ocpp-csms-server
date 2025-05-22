@@ -1,9 +1,9 @@
 use rust_ocpp::v2_0_1::enumerations::connector_status_enum_type::ConnectorStatusEnumType;
 use serde::{Deserialize, Serialize};
-use strum::{Display, EnumString};
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
-pub enum Status {
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub enum ConnectorStatus {
+    #[default]
     Available,
     Occupied,
     Reserved,
@@ -11,13 +11,7 @@ pub enum Status {
     Faulted,
 }
 
-impl Default for Status {
-    fn default() -> Self {
-        Self::Available
-    }
-}
-
-impl From<ConnectorStatusEnumType> for Status {
+impl From<ConnectorStatusEnumType> for ConnectorStatus {
     fn from(status: ConnectorStatusEnumType) -> Self {
         match status {
             ConnectorStatusEnumType::Available => Self::Available,
