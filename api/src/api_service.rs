@@ -71,8 +71,17 @@ impl Api for ApiService {
             .create_charger(&payload.charger_id)
             .await
             .map_err(|error| {
+                if error.to_string().contains("duplicate key") {
+                    warn!(
+                        error_message = error.to_string(),
+                        charger_id = payload.charger_id,
+                        "charger already exists"
+                    );
+                    return Status::already_exists("Charger already exists");
+                }
                 error!(
                     error_message = error.to_string(),
+                    charger_id = payload.charger_id,
                     "could not create charger"
                 );
                 Status::internal("Could not create charger")
