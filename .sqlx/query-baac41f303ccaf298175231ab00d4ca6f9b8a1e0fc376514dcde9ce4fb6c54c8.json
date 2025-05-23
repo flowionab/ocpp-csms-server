@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT * FROM transactions WHERE charger_id = $1 AND end_time IS NULL\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "charger_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "ocpp_transaction_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "start_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "end_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "watt_charged",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_authorized",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "baac41f303ccaf298175231ab00d4ca6f9b8a1e0fc376514dcde9ce4fb6c54c8"
+}

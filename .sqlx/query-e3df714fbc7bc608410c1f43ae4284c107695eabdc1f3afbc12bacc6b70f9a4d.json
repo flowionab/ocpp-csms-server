@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE transactions SET end_time = $1 WHERE charger_id = $2 AND ocpp_transaction_id = $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e3df714fbc7bc608410c1f43ae4284c107695eabdc1f3afbc12bacc6b70f9a4d"
+}
