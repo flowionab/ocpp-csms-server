@@ -200,7 +200,7 @@ impl OcppApiClient {
         response
             .into_inner()
             .transaction
-            .map(|transaction| Transaction::try_from(transaction))
+            .map(Transaction::try_from)
             .transpose()
     }
 }
