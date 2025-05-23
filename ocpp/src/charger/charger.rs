@@ -541,7 +541,7 @@ impl Charger {
             return Ok(true);
         }
 
-        let rfid_tag = self.data_store.get_rfid_tag_by_hex(&tag).await?;
+        let rfid_tag = self.data_store.get_rfid_tag_by_hex(tag).await?;
 
         Ok(rfid_tag.is_some())
     }

@@ -664,12 +664,11 @@ impl<'a> Ocpp1_6Interface<'a> {
         self.charger
             .data
             .evse_by_ocpp_id_mut(connector_id)
-            .map(|evse| evse.connector_by_ocpp_id_mut(1))
-            .flatten()
+            .and_then(|evse| evse.connector_by_ocpp_id_mut(1))
     }
 
     async fn validate_tag(&self, tag: &str) -> Result<bool, OCPP1_6Error> {
-        self.charger.validate_rfid_tag(&tag).await.map_err(|error| {
+        self.charger.validate_rfid_tag(tag).await.map_err(|error| {
             error!(
                 error_message = error.to_string(),
                 rfid_tag = tag,
