@@ -286,6 +286,22 @@ impl DataStore for SqlxDataStore<Postgres> {
         .await?;
         Ok(())
     }
+
+    async fn get_transaction(
+        &self,
+        transaction_id: Uuid,
+    ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query_as!(
+            Transaction,
+            "
+                SELECT * FROM transactions WHERE id = $1
+            ",
+            transaction_id
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| e.into())
+    }
 }
 
 #[derive(FromRow, Debug, Clone)]

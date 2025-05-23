@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message Transaction {
+  string id = 1;
+  string charger_id = 3;
+  string ocpp_transaction_id = 4;
+  int64 start_time = 5;
+  optional int64 end_time = 6;
+  int32 watt_charged = 7;
+  bool is_authorized = 8;
+}

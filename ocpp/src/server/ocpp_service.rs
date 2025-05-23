@@ -12,6 +12,7 @@ use crate::ocpp_csms_server::{
     StopTransactionRequest, StopTransactionResponse,
 };
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct OcppService {
@@ -31,12 +32,15 @@ impl Ocpp for OcppService {
         request: Request<StartTransactionRequest>,
     ) -> Result<Response<StartTransactionResponse>, Status> {
         let payload = request.into_inner();
+        let evse_id = Uuid::parse_str(&payload.evse_id)
+            .map_err(|_| Status::invalid_argument("Invalid evse_id"))?;
+
         match self.charger_pool.get(&payload.charger_id).await {
             Some(charger) => {
                 let mut lock = charger.lock().await;
-                lock.start_transaction(&payload.evse_id).await?;
+                let transaction = lock.start_transaction(evse_id).await?;
                 Ok(Response::new(StartTransactionResponse {
-                    transaction_id: "".to_string(),
+                    transaction: Some(transaction.into()),
                 }))
             }
             None => Err(Status::not_found(
@@ -163,8 +167,37 @@ impl Ocpp for OcppService {
 
     async fn stop_transaction(
         &self,
-        _request: Request<StopTransactionRequest>,
+        request: Request<StopTransactionRequest>,
     ) -> Result<Response<StopTransactionResponse>, Status> {
-        todo!()
+        let payload = request.into_inner();
+        let transaction_id = Uuid::parse_str(&payload.transaction_id)
+            .map_err(|_| Status::invalid_argument("Invalid transaction_id"))?;
+
+        match self.charger_pool.get(&payload.charger_id).await {
+            Some(charger) => {
+                let mut lock = charger.lock().await;
+                let transaction = lock.stop_transaction(transaction_id).await?;
+                Ok(Response::new(StopTransactionResponse {
+                    transaction: Some(transaction.into()),
+                }))
+            }
+            None => Err(Status::not_found(
+                "A charger with this id is not connected to this instance",
+            )),
+        }
+    }
+}
+
+impl From<shared::Transaction> for crate::ocpp_csms_server::Transaction {
+    fn from(value: shared::Transaction) -> Self {
+        Self {
+            id: value.id.to_string(),
+            charger_id: value.charger_id,
+            ocpp_transaction_id: value.ocpp_transaction_id,
+            start_time: value.start_time.timestamp_millis(),
+            end_time: value.end_time.map(|i| i.timestamp_millis()),
+            watt_charged: value.watt_charged,
+            is_authorized: value.is_authorized,
+        }
     }
 }

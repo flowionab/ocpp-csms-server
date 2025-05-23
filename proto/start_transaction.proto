@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "transaction.proto";
+
 package ocpp_csms_server;
 
 message StartTransactionRequest {
@@ -8,5 +10,5 @@ message StartTransactionRequest {
 }
 
 message StartTransactionResponse {
-  string transaction_id = 1;
+  Transaction transaction = 1;
 }

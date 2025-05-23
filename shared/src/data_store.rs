@@ -3,6 +3,7 @@ use crate::transaction::Transaction;
 use crate::ChargerConnectionInfo;
 use std::error::Error;
 use std::fmt::Debug;
+use uuid::Uuid;
 
 #[async_trait::async_trait]
 pub trait DataStore: Send + Sync + Debug {
@@ -83,4 +84,9 @@ pub trait DataStore: Send + Sync + Debug {
         ocpp_transaction_id: &str,
         watt_charged: i32,
     ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
+
+    async fn get_transaction(
+        &self,
+        transaction_id: Uuid,
+    ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>>;
 }

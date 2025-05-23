@@ -36,6 +36,9 @@ use rust_ocpp::v1_6::messages::meter_values::{MeterValuesRequest, MeterValuesRes
 use rust_ocpp::v1_6::messages::remote_start_transaction::{
     RemoteStartTransactionRequest, RemoteStartTransactionResponse,
 };
+use rust_ocpp::v1_6::messages::remote_stop_transaction::{
+    RemoteStopTransactionRequest, RemoteStopTransactionResponse,
+};
 use rust_ocpp::v1_6::messages::reset::{ResetRequest, ResetResponse};
 use rust_ocpp::v1_6::messages::start_transaction::{
     StartTransactionRequest, StartTransactionResponse,
@@ -249,6 +252,17 @@ impl<'a> Ocpp1_6Interface<'a> {
         Box<dyn std::error::Error + Send + Sync + 'static>,
     > {
         self.send("RemoteStartTransaction", request).await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn send_remote_stop_transaction(
+        &self,
+        request: RemoteStopTransactionRequest,
+    ) -> Result<
+        Result<RemoteStopTransactionResponse, OCPP1_6Error>,
+        Box<dyn std::error::Error + Send + Sync + 'static>,
+    > {
+        self.send("RemoteStopTransaction", request).await
     }
 
     #[instrument(skip(self))]

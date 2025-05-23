@@ -1,5 +1,5 @@
 use crate::ocpp_csms_server;
-use crate::types::{Charger, ChargerSummary, RebootType};
+use crate::types::{Charger, ChargerSummary, RebootType, Transaction};
 pub use ocpp_csms_server::api_client::ApiClient;
 use tonic::transport::Channel;
 
@@ -152,7 +152,7 @@ impl OcppApiClient {
         &self,
         charger_id: &str,
         evse_id: &str,
-    ) -> Result<String, Box<dyn std::error::Error + Send + Sync + 'static>> {
+    ) -> Result<Transaction, Box<dyn std::error::Error + Send + Sync + 'static>> {
         let mut client = self.client.clone();
         let request = ocpp_csms_server::StartTransactionRequest {
             charger_id: charger_id.to_string(),
@@ -161,22 +161,28 @@ impl OcppApiClient {
 
         let response = client.start_transaction(request).await?;
 
-        Ok(response.into_inner().transaction_id)
+        match response.into_inner().transaction {
+            Some(transaction) => Ok(Transaction::try_from(transaction)?),
+            None => Err("Missing transaction".into()),
+        }
     }
 
     pub async fn stop_transaction(
         &self,
         charger_id: &str,
         transaction_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    ) -> Result<Transaction, Box<dyn std::error::Error + Send + Sync + 'static>> {
         let mut client = self.client.clone();
         let request = ocpp_csms_server::StopTransactionRequest {
             charger_id: charger_id.to_string(),
             transaction_id: transaction_id.to_string(),
         };
 
-        let _ = client.stop_transaction(request).await?;
+        let response = client.stop_transaction(request).await?;
 
-        Ok(())
+        match response.into_inner().transaction {
+            Some(transaction) => Ok(Transaction::try_from(transaction)?),
+            None => Err("Missing transaction".into()),
+        }
     }
 }

@@ -1,6 +1,7 @@
 use crate::evse_data::EvseData;
 use crate::Ocpp1_6Configuration;
 use sqlx::FromRow;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Default, FromRow)]
 pub struct ChargerData {
@@ -25,5 +26,12 @@ impl ChargerData {
         self.evses
             .iter_mut()
             .find(|evse| evse.ocpp_evse_id == ocpp_id)
+    }
+    pub fn evse(&self, evse_id: Uuid) -> Option<&EvseData> {
+        self.evses.iter().find(|evse| evse.id == evse_id)
+    }
+
+    pub fn evse_mut(&mut self, evse_id: Uuid) -> Option<&mut EvseData> {
+        self.evses.iter_mut().find(|evse| evse.id == evse_id)
     }
 }

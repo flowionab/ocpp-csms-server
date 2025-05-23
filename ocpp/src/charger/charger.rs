@@ -4,28 +4,32 @@ use crate::charger::ocpp_2_0_interface::Ocpp2_0_1Interface;
 use crate::event::EventManager;
 use crate::ocpp::OcppProtocol;
 use crate::server::map_ocpp1_6_error_to_status;
+use chrono::Utc;
 use futures::stream::SplitSink;
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use poem::http::StatusCode;
 use poem::web::websocket::{Message, WebSocketStream};
 use poem::Response;
+use rand::Rng;
 use rust_ocpp::v1_6::messages::cancel_reservation::CancelReservationRequest;
 use rust_ocpp::v1_6::messages::change_availability::ChangeAvailabilityRequest;
 use rust_ocpp::v1_6::messages::remote_start_transaction::RemoteStartTransactionRequest;
+use rust_ocpp::v1_6::messages::remote_stop_transaction::RemoteStopTransactionRequest;
 use rust_ocpp::v1_6::messages::reset::ResetRequest;
 use rust_ocpp::v1_6::types::{
     AvailabilityStatus, AvailabilityType, CancelReservationStatus, RemoteStartStopStatus,
     ResetRequestStatus, ResetResponseStatus,
 };
 use serde_json::Value;
-use shared::DataStore;
 use shared::{ChargerData, Config};
+use shared::{DataStore, Transaction};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::sync::oneshot::Sender;
 use tokio::sync::Mutex;
 use tonic::Status;
 use tracing::{error, instrument, warn};
+use uuid::Uuid;
 
 type Ocpp1_6MessageQueue = Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>;
 
@@ -225,158 +229,239 @@ impl Charger {
     }
 
     #[instrument(skip_all)]
-    pub async fn start_transaction(&mut self, outlet_id: &str) -> Result<(), Status> {
-        let outlet = self
+    pub async fn start_transaction(&mut self, evse_id: Uuid) -> Result<Transaction, Status> {
+        let protocol = self.get_protocol()?;
+        let evse = self
             .data
-            .evses
-            .clone()
-            .into_iter()
-            .find(|i| i.id.to_string() == outlet_id)
-            .ok_or_else(|| Status::not_found("Outlet not found"))?;
+            .evse(evse_id)
+            .ok_or_else(|| Status::not_found("Evse not found"))?;
 
-        match self.protocol {
-            None => Err(Status::failed_precondition(
-                "The charger has not picked a ocpp protocol yet",
-            )),
-            Some(protocol) => match protocol {
-                OcppProtocol::Ocpp1_6 => {
-                    let response = self
-                        .ocpp1_6()
-                        .send_remote_start_transaction(RemoteStartTransactionRequest {
-                            connector_id: Some(outlet.ocpp_evse_id),
-                            id_tag: "central".to_string(),
-                            charging_profile: None,
-                        })
-                        .await
-                        .map_err(|error| {
-                            error!(
-                                error_message = error.to_string(),
-                                "Failed to start transaction, due to internal error"
-                            );
-                            Status::internal("Failed to start transaction, due to internal error")
-                        })?
-                        .map_err(map_ocpp1_6_error_to_status)?;
+        match protocol {
+            OcppProtocol::Ocpp1_6 => {
+                let ocpp_evse_id = evse.ocpp_evse_id;
+                let response = self
+                    .ocpp1_6()
+                    .send_remote_start_transaction(RemoteStartTransactionRequest {
+                        connector_id: Some(ocpp_evse_id),
+                        id_tag: "central".to_string(),
+                        charging_profile: None,
+                    })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to start transaction, due to internal error"
+                        );
+                        Status::internal("Failed to start transaction, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
 
-                    match response.status {
-                        RemoteStartStopStatus::Accepted => Ok(()),
-                        RemoteStartStopStatus::Rejected => {
-                            Err(Status::cancelled("Charger could not start transaction"))
-                        }
+                match response.status {
+                    RemoteStartStopStatus::Accepted => {
+                        let transaction_id: i32 = {
+                            let mut rng = rand::rng();
+                            rng.random::<i32>()
+                        };
+                        let transaction = self
+                            .data_store
+                            .create_transaction(
+                                &self.id,
+                                &transaction_id.to_string(),
+                                Utc::now(),
+                                true,
+                            )
+                            .await
+                            .map_err(|error| {
+                                error!(
+                                    error_message = error.to_string(),
+                                    "Failed to create transaction, due to internal error"
+                                );
+                                Status::internal(
+                                    "Failed to create transaction, due to internal error",
+                                )
+                            })?;
+                        Ok(transaction)
+                    }
+                    RemoteStartStopStatus::Rejected => {
+                        Err(Status::cancelled("Charger could not start transaction"))
                     }
                 }
-                OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
-            },
+            }
+            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+        }
+    }
+
+    #[instrument(skip_all)]
+    pub async fn stop_transaction(&mut self, transaction_id: Uuid) -> Result<Transaction, Status> {
+        let protocol = self.get_protocol()?;
+
+        let transaction = self
+            .data_store
+            .get_transaction(transaction_id)
+            .await
+            .map_err(|error| {
+                error!(
+                    error_message = error.to_string(),
+                    "Failed to get transaction, due to internal error"
+                );
+                Status::internal("Failed to get transaction, due to internal error")
+            })?
+            .ok_or_else(|| {
+                error!("Transaction not found");
+                Status::not_found("Transaction not found")
+            })?;
+
+        match protocol {
+            OcppProtocol::Ocpp1_6 => {
+                let response = self
+                    .ocpp1_6()
+                    .send_remote_stop_transaction(RemoteStopTransactionRequest {
+                        transaction_id: transaction.ocpp_transaction_id.parse().map_err(
+                            |_error| {
+                                error!("Failed to parse transaction id");
+                                Status::internal("Failed to parse transaction id")
+                            },
+                        )?,
+                    })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to stop transaction, due to internal error"
+                        );
+                        Status::internal("Failed to stop transaction, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
+
+                match response.status {
+                    RemoteStartStopStatus::Accepted => {
+                        let transaction_id: i32 = {
+                            let mut rng = rand::rng();
+                            rng.random::<i32>()
+                        };
+                        let transaction = self
+                            .data_store
+                            .create_transaction(
+                                &self.id,
+                                &transaction_id.to_string(),
+                                Utc::now(),
+                                true,
+                            )
+                            .await
+                            .map_err(|error| {
+                                error!(
+                                    error_message = error.to_string(),
+                                    "Failed to create transaction, due to internal error"
+                                );
+                                Status::internal(
+                                    "Failed to create transaction, due to internal error",
+                                )
+                            })?;
+                        Ok(transaction)
+                    }
+                    RemoteStartStopStatus::Rejected => {
+                        Err(Status::cancelled("Charger could not start transaction"))
+                    }
+                }
+            }
+            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
         }
     }
 
     #[instrument(skip_all)]
     pub async fn reboot_soft(&mut self) -> Result<(), Status> {
-        match self.protocol {
-            None => Err(Status::failed_precondition(
-                "The charger has not picked a ocpp protocol yet",
-            )),
-            Some(protocol) => match protocol {
-                OcppProtocol::Ocpp1_6 => {
-                    let response = self
-                        .ocpp1_6()
-                        .send_reset(ResetRequest {
-                            kind: ResetRequestStatus::Soft,
-                        })
-                        .await
-                        .map_err(|error| {
-                            error!(
-                                error_message = error.to_string(),
-                                "Failed to reset charger due to internal error"
-                            );
-                            Status::internal("Failed to reset, due to internal error")
-                        })?
-                        .map_err(map_ocpp1_6_error_to_status)?;
+        let protocol = self.get_protocol()?;
+        match protocol {
+            OcppProtocol::Ocpp1_6 => {
+                let response = self
+                    .ocpp1_6()
+                    .send_reset(ResetRequest {
+                        kind: ResetRequestStatus::Soft,
+                    })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to reset charger due to internal error"
+                        );
+                        Status::internal("Failed to reset, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
 
-                    match response.status {
-                        ResetResponseStatus::Accepted => Ok(()),
-                        ResetResponseStatus::Rejected => {
-                            Err(Status::cancelled("Charger could not reset"))
-                        }
+                match response.status {
+                    ResetResponseStatus::Accepted => Ok(()),
+                    ResetResponseStatus::Rejected => {
+                        Err(Status::cancelled("Charger could not reset"))
                     }
                 }
-                OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
-            },
+            }
+            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
         }
     }
 
     #[instrument(skip_all)]
     pub async fn reboot_hard(&mut self) -> Result<(), Status> {
-        match self.protocol {
-            None => Err(Status::failed_precondition(
-                "The charger has not picked a ocpp protocol yet",
-            )),
-            Some(protocol) => match protocol {
-                OcppProtocol::Ocpp1_6 => {
-                    let response = self
-                        .ocpp1_6()
-                        .send_reset(ResetRequest {
-                            kind: ResetRequestStatus::Hard,
-                        })
-                        .await
-                        .map_err(|error| {
-                            error!(
-                                error_message = error.to_string(),
-                                "Failed to reset charger due to internal error"
-                            );
-                            Status::internal("Failed to reset, due to internal error")
-                        })?
-                        .map_err(map_ocpp1_6_error_to_status)?;
+        let protocol = self.get_protocol()?;
+        match protocol {
+            OcppProtocol::Ocpp1_6 => {
+                let response = self
+                    .ocpp1_6()
+                    .send_reset(ResetRequest {
+                        kind: ResetRequestStatus::Hard,
+                    })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to reset charger due to internal error"
+                        );
+                        Status::internal("Failed to reset, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
 
-                    match response.status {
-                        ResetResponseStatus::Accepted => Ok(()),
-                        ResetResponseStatus::Rejected => {
-                            Err(Status::cancelled("Charger could not reset"))
-                        }
+                match response.status {
+                    ResetResponseStatus::Accepted => Ok(()),
+                    ResetResponseStatus::Rejected => {
+                        Err(Status::cancelled("Charger could not reset"))
                     }
                 }
-                OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
-            },
+            }
+            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
         }
     }
 
     #[instrument(skip_all)]
     pub async fn cancel_outlet_reservation(&mut self, _outlet_id: &str) -> Result<(), Status> {
-        match self.protocol {
-            None => Err(Status::failed_precondition(
-                "The charger has not picked a ocpp protocol yet",
-            )),
-            Some(protocol) => match protocol {
-                OcppProtocol::Ocpp1_6 => {
-                    let response = self
-                        .ocpp1_6()
-                        .send_cancel_reservation(CancelReservationRequest { reservation_id: 0 })
-                        .await
-                        .map_err(|error| {
-                            error!(
-                                error_message = error.to_string(),
-                                "Failed to cancel reservation due to internal error"
-                            );
-                            Status::internal("Failed to cancel reservation, due to internal error")
-                        })?
-                        .map_err(map_ocpp1_6_error_to_status)?;
+        let protocol = self.get_protocol()?;
+        match protocol {
+            OcppProtocol::Ocpp1_6 => {
+                let response = self
+                    .ocpp1_6()
+                    .send_cancel_reservation(CancelReservationRequest { reservation_id: 0 })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to cancel reservation due to internal error"
+                        );
+                        Status::internal("Failed to cancel reservation, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
 
-                    match response.status {
-                        CancelReservationStatus::Accepted => Ok(()),
-                        CancelReservationStatus::Rejected => {
-                            Err(Status::cancelled("Charger could not cancel reservation"))
-                        }
+                match response.status {
+                    CancelReservationStatus::Accepted => Ok(()),
+                    CancelReservationStatus::Rejected => {
+                        Err(Status::cancelled("Charger could not cancel reservation"))
                     }
                 }
-                OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
-            },
+            }
+            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
         }
     }
 
     #[instrument(skip_all)]
     pub async fn change_charger_availability(&mut self, available: bool) -> Result<(), Status> {
-        let protocol = self.protocol.ok_or_else(|| {
-            Status::failed_precondition("The charger has not picked a ocpp protocol yet")
-        })?;
+        let protocol = self.get_protocol()?;
 
         match protocol {
             OcppProtocol::Ocpp1_6 => {
@@ -418,9 +503,7 @@ impl Charger {
         evse_id: &str,
         available: bool,
     ) -> Result<(), Status> {
-        let protocol = self.protocol.ok_or_else(|| {
-            Status::failed_precondition("The charger has not picked a ocpp protocol yet")
-        })?;
+        let protocol = self.get_protocol()?;
 
         let outlet = self
             .data
@@ -471,9 +554,7 @@ impl Charger {
         _connector_id: &str,
         available: bool,
     ) -> Result<(), Status> {
-        let protocol = self.protocol.ok_or_else(|| {
-            Status::failed_precondition("The charger has not picked a ocpp protocol yet")
-        })?;
+        let protocol = self.get_protocol()?;
 
         let outlet = self
             .data
@@ -544,5 +625,13 @@ impl Charger {
         let rfid_tag = self.data_store.get_rfid_tag_by_hex(tag).await?;
 
         Ok(rfid_tag.is_some())
+    }
+
+    fn get_protocol(&self) -> Result<OcppProtocol, Status> {
+        let protocol = self.protocol.ok_or_else(|| {
+            Status::failed_precondition("The charger has not picked a ocpp protocol yet")
+        })?;
+
+        Ok(protocol)
     }
 }
