@@ -627,7 +627,7 @@ impl Charger {
         Ok(rfid_tag.is_some())
     }
 
-    #[warn(clippy::result_large_err)]
+    #[allow(clippy::result_large_err)]
     fn get_protocol(&self) -> Result<OcppProtocol, Status> {
         let protocol = self.protocol.ok_or_else(|| {
             Status::failed_precondition("The charger has not picked a ocpp protocol yet")
