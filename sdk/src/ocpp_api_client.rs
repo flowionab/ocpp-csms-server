@@ -185,4 +185,22 @@ impl OcppApiClient {
             None => Err("Missing transaction".into()),
         }
     }
+
+    pub async fn get_ongoing_transaction(
+        &self,
+        charger_id: &str,
+    ) -> Result<Option<Transaction>, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let mut client = self.client.clone();
+        let request = ocpp_csms_server::GetOngoingTransactionRequest {
+            charger_id: charger_id.to_string(),
+        };
+
+        let response = client.get_ongoing_transaction(request).await?;
+
+        response
+            .into_inner()
+            .transaction
+            .map(|transaction| Transaction::try_from(transaction))
+            .transpose()
+    }
 }

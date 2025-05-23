@@ -8,9 +8,9 @@ use crate::ocpp_csms_server::{
     ChangeOcpp16configurationValueRequest, ChangeOcpp16configurationValueResponse, Charger,
     ChargerSummary, ClearChargerCacheRequest, ClearChargerCacheResponse, CreateChargerRequest,
     CreateChargerResponse, Evse, GetChargerRequest, GetChargerResponse, GetChargersRequest,
-    GetChargersResponse, Ocpp16configuration, RebootChargerRequest, RebootChargerResponse,
-    StartTransactionRequest, StartTransactionResponse, StopTransactionRequest,
-    StopTransactionResponse,
+    GetChargersResponse, GetOngoingTransactionRequest, GetOngoingTransactionResponse,
+    Ocpp16configuration, RebootChargerRequest, RebootChargerResponse, StartTransactionRequest,
+    StartTransactionResponse, StopTransactionRequest, StopTransactionResponse,
 };
 use shared::{ChargerConnectionInfo, DataStore};
 use tokio::try_join;
@@ -259,6 +259,28 @@ impl Api for ApiService {
         let mut client = self.get_client(&payload.charger_id).await?;
         client.stop_transaction(payload).await
     }
+
+    async fn get_ongoing_transaction(
+        &self,
+        request: Request<GetOngoingTransactionRequest>,
+    ) -> Result<Response<GetOngoingTransactionResponse>, Status> {
+        let payload = request.into_inner();
+        self.data_store
+            .get_ongoing_transaction(&payload.charger_id)
+            .await
+            .map_err(|error| {
+                error!(
+                    error_message = error.to_string(),
+                    "could not get ongoing transaction"
+                );
+                Status::internal("Could not get ongoing transaction")
+            })
+            .map(|transaction| {
+                Response::new(GetOngoingTransactionResponse {
+                    transaction: transaction.map(|transaction| transaction.into()),
+                })
+            })
+    }
 }
 
 impl From<(shared::ChargerData, ChargerConnectionInfo)> for Charger {
@@ -352,6 +374,22 @@ impl From<shared::ConnectorType> for crate::ocpp_csms_server::ConnectorType {
             shared::ConnectorType::WirelessResonant => Self::WirelessResonant,
             shared::ConnectorType::Undetermined => Self::Undetermined,
             shared::ConnectorType::Unknown => Self::Unknown,
+        }
+    }
+}
+
+impl From<shared::Transaction> for crate::ocpp_csms_server::Transaction {
+    fn from(transaction: shared::Transaction) -> Self {
+        Self {
+            id: transaction.id.to_string(),
+            charger_id: transaction.charger_id,
+            ocpp_transaction_id: transaction.ocpp_transaction_id,
+            start_time: transaction.start_time.timestamp_millis(),
+            end_time: transaction
+                .end_time
+                .map(|end_time| end_time.timestamp_millis()),
+            watt_charged: transaction.watt_charged,
+            is_authorized: transaction.is_authorized,
         }
     }
 }

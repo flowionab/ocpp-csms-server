@@ -8,6 +8,7 @@ import "change_charger_availability.proto";
 import "change_evse_availability.proto";
 import "change_connector_availability.proto";
 import "cancel_outlet_reservation.proto";
+import "transaction.proto";
 
 package ocpp_csms_server;
 
@@ -24,6 +25,15 @@ service Api {
   rpc ClearChargerCache(ClearChargerCacheRequest) returns (ClearChargerCacheResponse) {}
   rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
   rpc StopTransaction(StopTransactionRequest) returns (StopTransactionResponse) {}
+  rpc GetOngoingTransaction(GetOngoingTransactionRequest) returns (GetOngoingTransactionResponse) {}
+}
+
+message GetOngoingTransactionRequest {
+  string charger_id = 1;
+}
+
+message GetOngoingTransactionResponse {
+  Transaction transaction = 1;
 }
 
 message CreateChargerRequest {
