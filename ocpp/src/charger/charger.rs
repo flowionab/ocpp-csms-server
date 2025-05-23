@@ -258,29 +258,48 @@ impl Charger {
 
                 match response.status {
                     RemoteStartStopStatus::Accepted => {
-                        let transaction_id: i32 = {
-                            let mut rng = rand::rng();
-                            rng.random::<i32>()
-                        };
                         let transaction = self
                             .data_store
-                            .create_transaction(
-                                &self.id,
-                                &transaction_id.to_string(),
-                                Utc::now(),
-                                true,
-                            )
+                            .get_ongoing_transaction(&self.id)
                             .await
                             .map_err(|error| {
-                                error!(
-                                    error_message = error.to_string(),
-                                    "Failed to create transaction, due to internal error"
-                                );
-                                Status::internal(
-                                    "Failed to create transaction, due to internal error",
-                                )
-                            })?;
-                        Ok(transaction)
+                            error!(
+                                error_message = error.to_string(),
+                                "Failed to get ongoing transaction, due to internal error"
+                            );
+                            Status::internal(
+                                "Failed to get ongoing transaction, due to internal error",
+                            )
+                        })?;
+
+                        match transaction {
+                            None => {
+                                let transaction_id: i32 = {
+                                    let mut rng = rand::rng();
+                                    rng.random::<i32>()
+                                };
+                                let transaction = self
+                                    .data_store
+                                    .create_transaction(
+                                        &self.id,
+                                        &transaction_id.to_string(),
+                                        Utc::now(),
+                                        true,
+                                    )
+                                    .await
+                                    .map_err(|error| {
+                                        error!(
+                                            error_message = error.to_string(),
+                                            "Failed to create transaction, due to internal error"
+                                        );
+                                        Status::internal(
+                                            "Failed to create transaction, due to internal error",
+                                        )
+                                    })?;
+                                Ok(transaction)
+                            }
+                            Some(transaction) => Ok(transaction),
+                        }
                     }
                     RemoteStartStopStatus::Rejected => {
                         Err(Status::cancelled("Charger could not start transaction"))
