@@ -11,7 +11,7 @@ export const protobufPackage = "ocpp_csms_server";
 
 export interface StartTransactionRequest {
   chargerId: string;
-  outletId: string;
+  evseId: string;
 }
 
 export interface StartTransactionResponse {
@@ -19,7 +19,7 @@ export interface StartTransactionResponse {
 }
 
 function createBaseStartTransactionRequest(): StartTransactionRequest {
-  return { chargerId: "", outletId: "" };
+  return { chargerId: "", evseId: "" };
 }
 
 export const StartTransactionRequest: MessageFns<StartTransactionRequest> = {
@@ -27,8 +27,8 @@ export const StartTransactionRequest: MessageFns<StartTransactionRequest> = {
     if (message.chargerId !== "") {
       writer.uint32(10).string(message.chargerId);
     }
-    if (message.outletId !== "") {
-      writer.uint32(18).string(message.outletId);
+    if (message.evseId !== "") {
+      writer.uint32(18).string(message.evseId);
     }
     return writer;
   },
@@ -53,7 +53,7 @@ export const StartTransactionRequest: MessageFns<StartTransactionRequest> = {
             break;
           }
 
-          message.outletId = reader.string();
+          message.evseId = reader.string();
           continue;
         }
       }
@@ -68,7 +68,7 @@ export const StartTransactionRequest: MessageFns<StartTransactionRequest> = {
   fromJSON(object: any): StartTransactionRequest {
     return {
       chargerId: isSet(object.chargerId) ? globalThis.String(object.chargerId) : "",
-      outletId: isSet(object.outletId) ? globalThis.String(object.outletId) : "",
+      evseId: isSet(object.evseId) ? globalThis.String(object.evseId) : "",
     };
   },
 
@@ -77,8 +77,8 @@ export const StartTransactionRequest: MessageFns<StartTransactionRequest> = {
     if (message.chargerId !== "") {
       obj.chargerId = message.chargerId;
     }
-    if (message.outletId !== "") {
-      obj.outletId = message.outletId;
+    if (message.evseId !== "") {
+      obj.evseId = message.evseId;
     }
     return obj;
   },
@@ -89,7 +89,7 @@ export const StartTransactionRequest: MessageFns<StartTransactionRequest> = {
   fromPartial<I extends Exact<DeepPartial<StartTransactionRequest>, I>>(object: I): StartTransactionRequest {
     const message = createBaseStartTransactionRequest();
     message.chargerId = object.chargerId ?? "";
-    message.outletId = object.outletId ?? "";
+    message.evseId = object.evseId ?? "";
     return message;
   },
 };

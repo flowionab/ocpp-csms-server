@@ -2,9 +2,9 @@
 
 import {apiClient} from "@/app/api/grpc";
 
-export async function startTransaction(chargerId: string, outletId: string) {
+export async function startTransaction(chargerId: string, evseId: string) {
     await new Promise<void>((resolve, reject) => {
-        apiClient.startTransaction({chargerId, outletId}, (error) => {
+        apiClient.startTransaction({chargerId, evseId}, (error) => {
             if (error) {
                 reject(error)
             } else {
