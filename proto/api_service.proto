@@ -94,10 +94,6 @@ message Connector {
   uint32 ocpp_id = 2;
   ConnectorType type = 3;
   ConnectorStatus status = 4;
-  bool is_active = 5;
-  bool is_car_connected = 6;
-  bool is_reserved = 7;
-  bool is_faulty = 8;
 }
 
 enum ConnectorStatus {

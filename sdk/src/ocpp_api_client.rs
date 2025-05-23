@@ -147,4 +147,36 @@ impl OcppApiClient {
 
         Ok(())
     }
+
+    pub async fn start_transaction(
+        &self,
+        charger_id: &str,
+        evse_id: &str,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let mut client = self.client.clone();
+        let request = ocpp_csms_server::StartTransactionRequest {
+            charger_id: charger_id.to_string(),
+            evse_id: evse_id.to_string(),
+        };
+
+        let response = client.start_transaction(request).await?;
+
+        Ok(response.into_inner().transaction_id)
+    }
+
+    pub async fn stop_transaction(
+        &self,
+        charger_id: &str,
+        transaction_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let mut client = self.client.clone();
+        let request = ocpp_csms_server::StopTransactionRequest {
+            charger_id: charger_id.to_string(),
+            transaction_id: transaction_id.to_string(),
+        };
+
+        let _ = client.stop_transaction(request).await?;
+
+        Ok(())
+    }
 }

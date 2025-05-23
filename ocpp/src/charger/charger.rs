@@ -532,4 +532,17 @@ impl Charger {
         };
         None
     }
+
+    pub async fn validate_rfid_tag(
+        &self,
+        tag: &str,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        if tag == "central" {
+            return Ok(true);
+        }
+
+        let rfid_tag = self.data_store.get_rfid_tag_by_hex(&tag).await?;
+
+        Ok(rfid_tag.is_some())
+    }
 }

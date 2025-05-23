@@ -304,11 +304,6 @@ impl From<(shared::ChargerData, ChargerConnectionInfo)> for Charger {
                                 connector.status.clone(),
                             )
                             .into(),
-                            is_active: connector.status != shared::ConnectorStatus::Unavailable
-                                || connector.status != shared::ConnectorStatus::Faulted,
-                            is_car_connected: connector.status == shared::ConnectorStatus::Occupied,
-                            is_reserved: connector.status == shared::ConnectorStatus::Reserved,
-                            is_faulty: connector.status == shared::ConnectorStatus::Faulted,
                         })
                         .collect(),
                 })

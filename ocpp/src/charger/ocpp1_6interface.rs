@@ -54,7 +54,9 @@ use rust_ocpp::v1_6::types::{
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use shared::{ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Configuration};
+use shared::{
+    ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Configuration, Transaction,
+};
 use tokio::sync::oneshot;
 use tracing::{error, info, instrument, warn};
 use uuid::Uuid;
@@ -344,21 +346,9 @@ impl<'a> Ocpp1_6Interface<'a> {
     ) -> Result<AuthorizeResponse, OCPP1_6Error> {
         let tag = request.id_tag;
 
-        let rfid_tag = self
-            .charger
-            .data_store
-            .get_rfid_tag_by_hex(&tag)
-            .await
-            .map_err(|error| {
-                error!(
-                    error_message = error.to_string(),
-                    rfid_tag = tag,
-                    "Failed to retrieve rfid tag from database"
-                );
-                OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
-            })?;
+        let is_tag_valid = self.validate_tag(&tag).await?;
 
-        if rfid_tag.is_some() {
+        if is_tag_valid {
             Ok(AuthorizeResponse {
                 id_tag_info: IdTagInfo {
                     expiry_date: None,
@@ -399,7 +389,7 @@ impl<'a> Ocpp1_6Interface<'a> {
         if self.charger.authenticated {
             Ok(BootNotificationResponse {
                 current_time: Utc::now(),
-                interval: 30,
+                interval: 3600,
                 status: RegistrationStatus::Accepted,
             })
         } else {
@@ -462,23 +452,23 @@ impl<'a> Ocpp1_6Interface<'a> {
         request: StartTransactionRequest,
     ) -> Result<StartTransactionResponse, OCPP1_6Error> {
         let tag = request.id_tag;
-        let transaction_id = 0;
 
-        let rfid_tag = self
-            .charger
-            .data_store
-            .get_rfid_tag_by_hex(&tag)
-            .await
-            .map_err(|error| {
+        let transaction = self.get_ongoing_transaction().await?;
+
+        let is_tag_valid = self.validate_tag(&tag).await?;
+
+        let transaction_id = transaction
+            .map(|t| t.ocpp_transaction_id.parse::<i32>())
+            .unwrap_or(Ok(0))
+            .map_err(|e| {
                 error!(
-                    error_message = error.to_string(),
-                    rfid_tag = tag,
-                    "Failed to retrieve rfid tag from database"
+                    error_message = e.to_string(),
+                    "Failed to parse transaction id"
                 );
-                OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
+                OCPP1_6Error::new_internal_str("Failed to parse transaction id")
             })?;
 
-        if rfid_tag.is_some() {
+        if is_tag_valid {
             Ok(StartTransactionResponse {
                 id_tag_info: IdTagInfo {
                     expiry_date: None,
@@ -505,38 +495,72 @@ impl<'a> Ocpp1_6Interface<'a> {
         request: StatusNotificationRequest,
     ) -> Result<StatusNotificationResponse, OCPP1_6Error> {
         if request.connector_id != 0 {
+            match request.status {
+                ChargePointStatus::Available => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Available;
+                    }
+                    self.end_ongoing_transaction(&request.timestamp).await?;
+                }
+                ChargePointStatus::Preparing => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Occupied;
+                    }
+
+                    let transaction_id: i32 = {
+                        let mut rng = rand::rng();
+                        rng.random::<i32>()
+                    };
+                    self.charger
+                        .data_store
+                        .create_transaction(
+                            &self.charger.id,
+                            &transaction_id.to_string(),
+                            request.timestamp.unwrap_or_else(Utc::now),
+                            false,
+                        )
+                        .await
+                        .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+                }
+                ChargePointStatus::Charging => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Occupied;
+                    }
+                }
+                ChargePointStatus::SuspendedEVSE => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Occupied;
+                    }
+                }
+                ChargePointStatus::SuspendedEV => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Occupied;
+                    }
+                }
+                ChargePointStatus::Finishing => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Occupied;
+                    }
+                }
+                ChargePointStatus::Reserved => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Reserved;
+                    }
+                }
+                ChargePointStatus::Unavailable => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Unavailable;
+                    }
+                }
+                ChargePointStatus::Faulted => {
+                    if let Some(connector) = self.unwrap_connector(request.connector_id) {
+                        connector.status = ConnectorStatus::Faulted;
+                    }
+                }
+            }
             if let Some(evse) = self.charger.data.evse_by_ocpp_id_mut(request.connector_id) {
                 let evse_id = evse.id;
                 if let Some(connector) = evse.connector_by_ocpp_id_mut(1) {
-                    match request.status {
-                        ChargePointStatus::Available => {
-                            connector.status = ConnectorStatus::Available;
-                        }
-                        ChargePointStatus::Preparing => {
-                            connector.status = ConnectorStatus::Occupied;
-                        }
-                        ChargePointStatus::Charging => {
-                            connector.status = ConnectorStatus::Occupied;
-                        }
-                        ChargePointStatus::SuspendedEVSE => {
-                            connector.status = ConnectorStatus::Occupied;
-                        }
-                        ChargePointStatus::SuspendedEV => {
-                            connector.status = ConnectorStatus::Occupied;
-                        }
-                        ChargePointStatus::Finishing => {
-                            connector.status = ConnectorStatus::Occupied;
-                        }
-                        ChargePointStatus::Reserved => {
-                            connector.status = ConnectorStatus::Reserved;
-                        }
-                        ChargePointStatus::Unavailable => {
-                            connector.status = ConnectorStatus::Unavailable;
-                        }
-                        ChargePointStatus::Faulted => {
-                            connector.status = ConnectorStatus::Faulted;
-                        }
-                    }
                     self.charger
                         .event_manager
                         .send_connector_status_event(
@@ -562,8 +586,96 @@ impl<'a> Ocpp1_6Interface<'a> {
     #[instrument(skip(self))]
     pub async fn handle_stop_transaction(
         &mut self,
-        _request: StopTransactionRequest,
+        request: StopTransactionRequest,
     ) -> Result<StopTransactionResponse, OCPP1_6Error> {
-        Ok(StopTransactionResponse { id_tag_info: None })
+        self.charger
+            .data_store
+            .update_transaction_watt_charged(
+                &self.charger.id,
+                &request.transaction_id.to_string(),
+                request.meter_stop,
+            )
+            .await
+            .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+
+        self.charger
+            .data_store
+            .end_transaction(
+                &self.charger.id,
+                &request.transaction_id.to_string(),
+                request.timestamp,
+            )
+            .await
+            .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+
+        if let Some(tag) = request.id_tag {
+            let is_tag_valid = self.validate_tag(&tag).await?;
+
+            if is_tag_valid {
+                Ok(StopTransactionResponse {
+                    id_tag_info: Some(IdTagInfo {
+                        expiry_date: None,
+                        parent_id_tag: None,
+                        status: AuthorizationStatus::Accepted,
+                    }),
+                })
+            } else {
+                Ok(StopTransactionResponse {
+                    id_tag_info: Some(IdTagInfo {
+                        expiry_date: None,
+                        parent_id_tag: None,
+                        status: AuthorizationStatus::Invalid,
+                    }),
+                })
+            }
+        } else {
+            Ok(StopTransactionResponse { id_tag_info: None })
+        }
+    }
+
+    async fn get_ongoing_transaction(&mut self) -> Result<Option<Transaction>, OCPP1_6Error> {
+        self.charger
+            .data_store
+            .get_ongoing_transaction(&self.charger.id)
+            .await
+            .map_err(|e| OCPP1_6Error::new_internal(&e))
+    }
+
+    async fn end_ongoing_transaction(
+        &mut self,
+        end_time: &Option<chrono::DateTime<Utc>>,
+    ) -> Result<(), OCPP1_6Error> {
+        if let Some(transaction) = self.get_ongoing_transaction().await? {
+            self.charger
+                .data_store
+                .end_transaction(
+                    &self.charger.id,
+                    &transaction.ocpp_transaction_id,
+                    end_time.unwrap_or_else(Utc::now),
+                )
+                .await
+                .map_err(|e| OCPP1_6Error::new_internal(&e))?
+        }
+
+        Ok(())
+    }
+
+    fn unwrap_connector(&mut self, connector_id: u32) -> Option<&mut ConnectorData> {
+        self.charger
+            .data
+            .evse_by_ocpp_id_mut(connector_id)
+            .map(|evse| evse.connector_by_ocpp_id_mut(1))
+            .flatten()
+    }
+
+    async fn validate_tag(&self, tag: &str) -> Result<bool, OCPP1_6Error> {
+        self.charger.validate_rfid_tag(&tag).await.map_err(|error| {
+            error!(
+                error_message = error.to_string(),
+                rfid_tag = tag,
+                "Failed to retrieve rfid tag from database"
+            );
+            OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
+        })
     }
 }

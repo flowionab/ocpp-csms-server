@@ -1,5 +1,6 @@
 use crate::charger_data::ChargerData;
 use crate::data_store::DataStore;
+use crate::transaction::Transaction;
 use crate::ChargerConnectionInfo;
 use chrono::{DateTime, Utc};
 use sqlx::{FromRow, Pool, Postgres};
@@ -198,6 +199,91 @@ impl DataStore for SqlxDataStore<Postgres> {
         .execute(&self.pool)
         .await?;
 
+        Ok(())
+    }
+
+    async fn create_transaction(
+        &self,
+        charger_id: &str,
+        ocpp_transaction_id: &str,
+        start_time: DateTime<Utc>,
+        is_authorized: bool,
+    ) -> Result<Transaction, Box<dyn Error + Send + Sync + 'static>> {
+        Ok(sqlx::query!(
+            "
+            INSERT INTO transactions (id, charger_id, start_time, is_authorized, ocpp_transaction_id)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
+        ",
+            Uuid::new_v4(),
+            charger_id,
+            start_time,
+            is_authorized,
+            ocpp_transaction_id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map(|record| Transaction {
+            id: record.id,
+            charger_id: charger_id.to_string(),
+            ocpp_transaction_id: "".to_string(),
+            start_time,
+            end_time: None,
+            watt_charged: 0,
+            is_authorized,
+        })?)
+    }
+
+    async fn get_ongoing_transaction(
+        &self,
+        charger_id: &str,
+    ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>> {
+        Ok(sqlx::query_as!(
+            Transaction,
+            "
+                SELECT * FROM transactions WHERE charger_id = $1 AND end_time IS NULL
+            ",
+            charger_id
+        )
+        .fetch_optional(&self.pool)
+        .await?)
+    }
+
+    async fn end_transaction(
+        &self,
+        charger_id: &str,
+        ocpp_transaction_id: &str,
+        end_time: DateTime<Utc>,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query!(
+            "
+                UPDATE transactions SET end_time = $1 WHERE charger_id = $2 AND ocpp_transaction_id = $3
+            ",
+            end_time,
+            charger_id,
+            ocpp_transaction_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn update_transaction_watt_charged(
+        &self,
+        charger_id: &str,
+        ocpp_transaction_id: &str,
+        watt_charged: i32,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query!(
+            "
+                UPDATE transactions SET watt_charged = $1 WHERE charger_id = $2 AND ocpp_transaction_id = $3
+            ",
+            watt_charged,
+            charger_id,
+            ocpp_transaction_id
+        )
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 }

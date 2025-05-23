@@ -4,7 +4,7 @@ package ocpp_csms_server;
 
 message StartTransactionRequest {
   string charger_id = 1;
-  string outlet_id = 2;
+  string evse_id = 2;
 }
 
 message StartTransactionResponse {
