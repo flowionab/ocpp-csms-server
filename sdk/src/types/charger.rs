@@ -16,9 +16,10 @@ pub struct Charger {
     pub last_seen: String,
 }
 
-impl From<ocpp_csms_server::Charger> for Charger {
-    fn from(value: ocpp_csms_server::Charger) -> Self {
-        Self {
+impl TryFrom<ocpp_csms_server::Charger> for Charger {
+    type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
+    fn try_from(value: ocpp_csms_server::Charger) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: value.id,
             serial_number: value.serial_number,
             model: value.model,
@@ -27,9 +28,13 @@ impl From<ocpp_csms_server::Charger> for Charger {
             iccid: value.iccid,
             imsi: value.imsi,
             // ocpp1_6_configuration_values: value.ocpp1_6_configuration_values,
-            evses: value.evses.into_iter().map(Evse::from).collect(),
+            evses: value
+                .evses
+                .into_iter()
+                .map(Evse::try_from)
+                .collect::<Result<Vec<_>, _>>()?,
             is_online: value.is_online,
             last_seen: value.last_seen,
-        }
+        })
     }
 }
