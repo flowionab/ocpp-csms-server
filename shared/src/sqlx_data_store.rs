@@ -205,18 +205,20 @@ impl DataStore for SqlxDataStore<Postgres> {
     async fn create_transaction(
         &self,
         charger_id: &str,
+        evse_id: Uuid,
         ocpp_transaction_id: &str,
         start_time: DateTime<Utc>,
         is_authorized: bool,
     ) -> Result<Transaction, Box<dyn Error + Send + Sync + 'static>> {
         Ok(sqlx::query!(
             "
-            INSERT INTO transactions (id, charger_id, start_time, is_authorized, ocpp_transaction_id)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO transactions (id, charger_id, evse_id, start_time, is_authorized, ocpp_transaction_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id
         ",
             Uuid::new_v4(),
             charger_id,
+            evse_id,
             start_time,
             is_authorized,
             ocpp_transaction_id
@@ -226,7 +228,8 @@ impl DataStore for SqlxDataStore<Postgres> {
         .map(|record| Transaction {
             id: record.id,
             charger_id: charger_id.to_string(),
-            ocpp_transaction_id: "".to_string(),
+            evse_id,
+            ocpp_transaction_id: ocpp_transaction_id.to_string(),
             start_time,
             end_time: None,
             watt_charged: 0,
@@ -237,13 +240,15 @@ impl DataStore for SqlxDataStore<Postgres> {
     async fn get_ongoing_transaction(
         &self,
         charger_id: &str,
+        evse_id: Uuid,
     ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>> {
         Ok(sqlx::query_as!(
             Transaction,
             "
-                SELECT * FROM transactions WHERE charger_id = $1 AND end_time IS NULL
+                SELECT * FROM transactions WHERE charger_id = $1 AND evse_id = $2 AND end_time IS NULL
             ",
-            charger_id
+            charger_id,
+            evse_id
         )
         .fetch_optional(&self.pool)
         .await?)

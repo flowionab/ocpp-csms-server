@@ -6,6 +6,7 @@ use uuid::Uuid;
 pub struct Transaction {
     pub id: Uuid,
     pub charger_id: String,
+    pub evse_id: Uuid,
     pub ocpp_transaction_id: String,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,

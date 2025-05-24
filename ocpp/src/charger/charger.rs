@@ -235,6 +235,7 @@ impl Charger {
             .data
             .evse(evse_id)
             .ok_or_else(|| Status::not_found("Evse not found"))?;
+        let evse_id = evse.id;
 
         match protocol {
             OcppProtocol::Ocpp1_6 => {
@@ -260,17 +261,17 @@ impl Charger {
                     RemoteStartStopStatus::Accepted => {
                         let transaction = self
                             .data_store
-                            .get_ongoing_transaction(&self.id)
+                            .get_ongoing_transaction(&self.id, evse_id)
                             .await
                             .map_err(|error| {
-                            error!(
-                                error_message = error.to_string(),
-                                "Failed to get ongoing transaction, due to internal error"
-                            );
-                            Status::internal(
-                                "Failed to get ongoing transaction, due to internal error",
-                            )
-                        })?;
+                                error!(
+                                    error_message = error.to_string(),
+                                    "Failed to get ongoing transaction, due to internal error"
+                                );
+                                Status::internal(
+                                    "Failed to get ongoing transaction, due to internal error",
+                                )
+                            })?;
 
                         match transaction {
                             None => {
@@ -282,6 +283,7 @@ impl Charger {
                                     .data_store
                                     .create_transaction(
                                         &self.id,
+                                        evse_id,
                                         &transaction_id.to_string(),
                                         Utc::now(),
                                         true,
@@ -353,31 +355,7 @@ impl Charger {
                     .map_err(map_ocpp1_6_error_to_status)?;
 
                 match response.status {
-                    RemoteStartStopStatus::Accepted => {
-                        let transaction_id: i32 = {
-                            let mut rng = rand::rng();
-                            rng.random::<i32>()
-                        };
-                        let transaction = self
-                            .data_store
-                            .create_transaction(
-                                &self.id,
-                                &transaction_id.to_string(),
-                                Utc::now(),
-                                true,
-                            )
-                            .await
-                            .map_err(|error| {
-                                error!(
-                                    error_message = error.to_string(),
-                                    "Failed to create transaction, due to internal error"
-                                );
-                                Status::internal(
-                                    "Failed to create transaction, due to internal error",
-                                )
-                            })?;
-                        Ok(transaction)
-                    }
+                    RemoteStartStopStatus::Accepted => Ok(transaction),
                     RemoteStartStopStatus::Rejected => {
                         Err(Status::cancelled("Charger could not start transaction"))
                     }

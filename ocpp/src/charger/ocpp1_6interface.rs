@@ -467,7 +467,7 @@ impl<'a> Ocpp1_6Interface<'a> {
     ) -> Result<StartTransactionResponse, OCPP1_6Error> {
         let tag = request.id_tag;
 
-        let transaction = self.get_ongoing_transaction().await?;
+        let transaction = self.get_ongoing_transaction(request.connector_id).await?;
 
         let is_tag_valid = self.validate_tag(&tag).await?;
 
@@ -514,7 +514,8 @@ impl<'a> Ocpp1_6Interface<'a> {
                     if let Some(connector) = self.unwrap_connector(request.connector_id) {
                         connector.status = ConnectorStatus::Available;
                     }
-                    self.end_ongoing_transaction(&request.timestamp).await?;
+                    self.end_ongoing_transaction(request.connector_id, &request.timestamp)
+                        .await?;
                 }
                 ChargePointStatus::Preparing => {
                     if let Some(connector) = self.unwrap_connector(request.connector_id) {
@@ -525,10 +526,20 @@ impl<'a> Ocpp1_6Interface<'a> {
                         let mut rng = rand::rng();
                         rng.random::<i32>()
                     };
+                    let evse = self
+                        .charger
+                        .data
+                        .evse_by_ocpp_id(request.connector_id)
+                        .ok_or_else(|| {
+                            OCPP1_6Error::new_internal_str(
+                                "No EVSE found for the given connector ID",
+                            )
+                        })?;
                     self.charger
                         .data_store
                         .create_transaction(
                             &self.charger.id,
+                            evse.id,
                             &transaction_id.to_string(),
                             request.timestamp.unwrap_or_else(Utc::now),
                             false,
@@ -647,19 +658,29 @@ impl<'a> Ocpp1_6Interface<'a> {
         }
     }
 
-    async fn get_ongoing_transaction(&mut self) -> Result<Option<Transaction>, OCPP1_6Error> {
-        self.charger
-            .data_store
-            .get_ongoing_transaction(&self.charger.id)
-            .await
-            .map_err(|e| OCPP1_6Error::new_internal(&e))
+    async fn get_ongoing_transaction(
+        &mut self,
+        connector_id: u32,
+    ) -> Result<Option<Transaction>, OCPP1_6Error> {
+        if let Some(evse) = self.charger.data.evse_by_ocpp_id(connector_id) {
+            self.charger
+                .data_store
+                .get_ongoing_transaction(&self.charger.id, evse.id)
+                .await
+                .map_err(|e| OCPP1_6Error::new_internal(&e))
+        } else {
+            Err(OCPP1_6Error::new_internal_str(
+                "No EVSE found for the given connector ID",
+            ))
+        }
     }
 
     async fn end_ongoing_transaction(
         &mut self,
+        connector_id: u32,
         end_time: &Option<chrono::DateTime<Utc>>,
     ) -> Result<(), OCPP1_6Error> {
-        if let Some(transaction) = self.get_ongoing_transaction().await? {
+        if let Some(transaction) = self.get_ongoing_transaction(connector_id).await? {
             self.charger
                 .data_store
                 .end_transaction(

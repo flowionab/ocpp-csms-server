@@ -2,6 +2,7 @@ use crate::ocpp_csms_server;
 use crate::types::{Charger, ChargerSummary, RebootType, Transaction};
 pub use ocpp_csms_server::api_client::ApiClient;
 use tonic::transport::Channel;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct OcppApiClient {
@@ -189,10 +190,12 @@ impl OcppApiClient {
     pub async fn get_ongoing_transaction(
         &self,
         charger_id: &str,
+        evse_id: Uuid,
     ) -> Result<Option<Transaction>, Box<dyn std::error::Error + Send + Sync + 'static>> {
         let mut client = self.client.clone();
         let request = ocpp_csms_server::GetOngoingTransactionRequest {
             charger_id: charger_id.to_string(),
+            evse_id: evse_id.to_string(),
         };
 
         let response = client.get_ongoing_transaction(request).await?;

@@ -61,6 +61,7 @@ pub trait DataStore: Send + Sync + Debug {
     async fn create_transaction(
         &self,
         charger_id: &str,
+        evse_id: Uuid,
         ocpp_transaction_id: &str,
         start_time: chrono::DateTime<chrono::Utc>,
         is_authorized: bool,
@@ -69,6 +70,7 @@ pub trait DataStore: Send + Sync + Debug {
     async fn get_ongoing_transaction(
         &self,
         charger_id: &str,
+        evse_id: Uuid,
     ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>>;
 
     async fn end_transaction(
