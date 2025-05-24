@@ -37,6 +37,11 @@
         "ordinal": 6,
         "name": "is_authorized",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "evse_id",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
@@ -50,6 +55,7 @@
       false,
       false,
       true,
+      false,
       false,
       false
     ]

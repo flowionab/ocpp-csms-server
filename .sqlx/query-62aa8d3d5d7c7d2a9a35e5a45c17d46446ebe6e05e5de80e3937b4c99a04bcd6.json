@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT * FROM transactions WHERE charger_id = $1 AND end_time IS NULL\n            ",
+  "query": "\n                SELECT * FROM transactions WHERE charger_id = $1 AND evse_id = $2 AND end_time IS NULL\n            ",
   "describe": {
     "columns": [
       {
@@ -37,11 +37,17 @@
         "ordinal": 6,
         "name": "is_authorized",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "evse_id",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Text",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -51,8 +57,9 @@
       false,
       true,
       false,
+      false,
       false
     ]
   },
-  "hash": "baac41f303ccaf298175231ab00d4ca6f9b8a1e0fc376514dcde9ce4fb6c54c8"
+  "hash": "62aa8d3d5d7c7d2a9a35e5a45c17d46446ebe6e05e5de80e3937b4c99a04bcd6"
 }
