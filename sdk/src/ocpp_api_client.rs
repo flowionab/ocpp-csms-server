@@ -28,11 +28,11 @@ impl OcppApiClient {
 
         let response = client.create_charger(request).await?;
 
-        Ok(response
+        response
             .into_inner()
             .charger
             .map(Charger::try_from)
-            .transpose()?)
+            .transpose()
     }
 
     /// Retrieves a charger by its ID.
@@ -47,11 +47,11 @@ impl OcppApiClient {
 
         let response = client.get_charger(request).await?;
 
-        Ok(response
+        response
             .into_inner()
             .charger
             .map(Charger::try_from)
-            .transpose()?)
+            .transpose()
     }
 
     pub async fn get_chargers(
