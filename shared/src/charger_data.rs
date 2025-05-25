@@ -18,6 +18,20 @@ pub struct ChargerData {
 }
 
 impl ChargerData {
+    pub fn evse_by_ocpp_id_or_create(&mut self, ocpp_id: u32) -> &mut EvseData {
+        if self.evse_by_ocpp_id(ocpp_id).is_some() {
+            self.evse_by_ocpp_id_mut(ocpp_id).unwrap()
+        } else {
+            self.create_evse(ocpp_id)
+        }
+    }
+
+    fn create_evse(&mut self, ocpp_id: u32) -> &mut EvseData {
+        let new_evse = EvseData::new(ocpp_id);
+        self.evses.push(new_evse);
+        self.evses.last_mut().unwrap()
+    }
+
     pub fn evse_by_ocpp_id(&self, ocpp_id: u32) -> Option<&EvseData> {
         self.evses.iter().find(|evse| evse.ocpp_evse_id == ocpp_id)
     }

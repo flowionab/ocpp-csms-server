@@ -631,7 +631,7 @@ async fn handle_request<T: Serialize>(
     timeout(duration, future)
         .await
         .map_err(|_| OCPP1_6Error::InternalError {
-            description: "Request timed out".to_string(),
+            description: format!("Request timed out after {}ms", duration.as_millis()),
             details: Value::Null,
         })?
         .map(|i| serde_json::to_value(&i).unwrap())
