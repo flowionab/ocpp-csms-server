@@ -7,6 +7,7 @@ mod data_store;
 mod sqlx_data_store;
 
 mod charger_connection_info;
+mod charger_settings;
 mod connector_data;
 mod connector_status;
 mod connector_type;

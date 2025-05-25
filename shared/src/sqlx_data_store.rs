@@ -45,6 +45,7 @@ impl DataStore for SqlxDataStore<Postgres> {
                 .evses
                 .map(|j| serde_json::from_str(&j).unwrap_or_default())
                 .unwrap_or_default(),
+            settings: Default::default(),
         }))
     }
 
@@ -77,6 +78,7 @@ impl DataStore for SqlxDataStore<Postgres> {
                     .evses
                     .map(|j| serde_json::from_str(&j).unwrap_or_default())
                     .unwrap_or_default(),
+                settings: Default::default(),
             })
             .collect())
     }

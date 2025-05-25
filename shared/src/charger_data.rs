@@ -1,3 +1,4 @@
+use crate::charger_settings::ChargerSettings;
 use crate::evse_data::EvseData;
 use crate::Ocpp1_6Configuration;
 use sqlx::FromRow;
@@ -13,6 +14,8 @@ pub struct ChargerData {
     pub iccid: Option<String>,
     pub imsi: Option<String>,
     pub evses: Vec<EvseData>,
+
+    pub settings: ChargerSettings,
 
     pub ocpp1_6configuration: Option<Ocpp1_6Configuration>,
 }

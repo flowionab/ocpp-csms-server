@@ -35,10 +35,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
             warn!(
                 "No DATABASE_URL env var provided, attempting to connect to database at localhost"
             );
-            "postgres://postgres:password@localhost/postgres".to_string()
+            "postgres://postgres:password@localhost/ocpp_csms_server".to_string()
         });
         let pool = PgPoolOptions::new()
             .max_connections(5)
+            .acquire_timeout(std::time::Duration::from_secs(5))
             .connect(&database_url)
             .await
             .inspect_err(|e| {

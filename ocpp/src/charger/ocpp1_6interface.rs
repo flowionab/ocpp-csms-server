@@ -124,6 +124,8 @@ impl<'a> Ocpp1_6Interface<'a> {
                             "Failed to update charger database"
                         );
                     }
+
+                    self.update_charger_configuration().await?;
                 }
                 Err(err) => {
                     warn!(
@@ -658,17 +660,12 @@ impl<'a> Ocpp1_6Interface<'a> {
         &mut self,
         connector_id: u32,
     ) -> Result<Option<Transaction>, OCPP1_6Error> {
-        if let Some(evse) = self.charger.data.evse_by_ocpp_id(connector_id) {
-            self.charger
-                .data_store
-                .get_ongoing_transaction(&self.charger.id, evse.id)
-                .await
-                .map_err(|e| OCPP1_6Error::new_internal(&e))
-        } else {
-            Err(OCPP1_6Error::new_internal_str(
-                "No EVSE found for the given connector ID",
-            ))
-        }
+        let evse = self.charger.data.evse_by_ocpp_id_or_create(connector_id);
+        self.charger
+            .data_store
+            .get_ongoing_transaction(&self.charger.id, evse.id)
+            .await
+            .map_err(|e| OCPP1_6Error::new_internal(&e))
     }
 
     async fn end_ongoing_transaction(
@@ -707,5 +704,49 @@ impl<'a> Ocpp1_6Interface<'a> {
             );
             OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
         })
+    }
+
+    async fn update_charger_configuration(
+        &mut self,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        if let Some(configuration) = &self.charger.data.ocpp1_6configuration {
+            let target_configuration = self
+                .charger
+                .data
+                .settings
+                .get_ocpp_1_6_configuration_entries(&self.charger.config);
+
+            for (key, value) in target_configuration {
+                if let Some(config_value) = configuration.get_configuration(&key) {
+                    if !config_value.read_only && config_value.value != Some(value.clone()) {
+                        match self
+                            .send_change_configuration(ChangeConfigurationRequest {
+                                key: key.to_string(),
+                                value: value.to_string(),
+                            })
+                            .await?
+                        {
+                            Ok(response) => {
+                                if response.status == ConfigurationStatus::Accepted {
+                                    info!("Configuration {} updated to {}", key, value);
+                                } else {
+                                    warn!(
+                                        "Failed to update configuration {}: {:?}",
+                                        key, response.status
+                                    );
+                                }
+                            }
+                            Err(err) => {
+                                warn!(
+                                    error_message = err.to_string(),
+                                    "Failed to change configuration"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }

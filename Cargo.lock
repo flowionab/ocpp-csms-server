@@ -137,7 +137,7 @@ checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 
 [[package]]
 name = "api"
-version = "0.1.26"
+version = "0.1.27"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2010,7 +2010,7 @@ dependencies = [
 
 [[package]]
 name = "ocpp"
-version = "0.1.26"
+version = "0.1.27"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2060,7 +2060,7 @@ dependencies = [
 
 [[package]]
 name = "ocpp-csms-server-sdk"
-version = "0.1.26"
+version = "0.1.27"
 dependencies = [
  "chrono",
  "futures",
@@ -3135,7 +3135,7 @@ dependencies = [
 
 [[package]]
 name = "shared"
-version = "0.1.26"
+version = "0.1.27"
 dependencies = [
  "async-trait",
  "chrono",

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message ChargerConfiguration {
+  string charger_id = 1;
+
+}
+
+message OcppCommunicationConfiguration {
+  IntVariable active_network_profile = 1;
+}
+
+message IntVariable {
+  bool variable_name = 1;
+  Mutability mutability = 2;
+}
+
+enum Mutability {
+  MUTABILITY_UNSPECIFIED = 0;
+  MUTABILITY_READ_ONLY = 1;
+  MUTABILITY_READ_WRITE = 2;
+}
