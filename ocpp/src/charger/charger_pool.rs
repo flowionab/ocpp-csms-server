@@ -1,7 +1,19 @@
 use crate::charger::Charger;
+use lazy_static::lazy_static;
+use prometheus::{register_gauge, Gauge};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
+use std::time::Duration;
 use tokio::sync::Mutex;
+use tokio::time::interval;
+
+lazy_static! {
+    static ref CONNECTED_CHARGERS: Gauge = register_gauge!(
+        "ocpp_csms_server_connected_chargers",
+        "Number of connected chargers"
+    )
+    .unwrap();
+}
 
 #[derive(Clone)]
 pub struct ChargerPool {
@@ -10,9 +22,26 @@ pub struct ChargerPool {
 
 impl ChargerPool {
     pub fn new() -> Self {
-        Self {
-            chargers: Arc::new(Mutex::new(BTreeMap::new())),
+        let chargers = Arc::new(Mutex::new(BTreeMap::new()));
+
+        tokio::spawn(Self::gc_chargers(chargers.clone()));
+
+        Self { chargers }
+    }
+
+    async fn gc_chargers(chargers: Arc<Mutex<BTreeMap<String, Weak<Mutex<Charger>>>>>) {
+        let mut interval = interval(Duration::from_secs(15));
+
+        loop {
+            interval.tick().await;
+            Self::remove_gone_chargers(&chargers).await;
         }
+    }
+
+    async fn remove_gone_chargers(chargers: &Arc<Mutex<BTreeMap<String, Weak<Mutex<Charger>>>>>) {
+        let mut lock = chargers.lock().await;
+        lock.retain(|_, weak| weak.strong_count() > 0);
+        CONNECTED_CHARGERS.set(lock.len() as f64);
     }
 
     pub async fn insert(&self, id: &str, charger: &Arc<Mutex<Charger>>) {

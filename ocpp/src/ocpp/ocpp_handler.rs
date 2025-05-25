@@ -84,6 +84,7 @@ async fn handle(
     }
 
     let charger = Arc::new(Mutex::new(charger));
+
     charger_pool.insert(&id, &charger).await;
 
     let protocol = validate_protocol(headers)?;
