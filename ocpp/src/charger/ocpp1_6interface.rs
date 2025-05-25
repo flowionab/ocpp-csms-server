@@ -673,7 +673,12 @@ impl<'a> Ocpp1_6Interface<'a> {
         connector_id: u32,
         end_time: &Option<chrono::DateTime<Utc>>,
     ) -> Result<(), OCPP1_6Error> {
+        info!("Ending ongoing transaction for connector {}", connector_id);
         if let Some(transaction) = self.get_ongoing_transaction(connector_id).await? {
+            info!(
+                "Ending transaction {} for connector {}",
+                transaction.ocpp_transaction_id, connector_id
+            );
             self.charger
                 .data_store
                 .end_transaction(
@@ -716,6 +721,7 @@ impl<'a> Ocpp1_6Interface<'a> {
                 .settings
                 .get_ocpp_1_6_configuration_entries(&self.charger.config);
 
+            let mut needs_reboot = false;
             for (key, value) in target_configuration {
                 if let Some(config_value) = configuration.get_configuration(&key) {
                     if !config_value.read_only && config_value.value != Some(value.clone()) {
@@ -727,8 +733,13 @@ impl<'a> Ocpp1_6Interface<'a> {
                             .await?
                         {
                             Ok(response) => {
-                                if response.status == ConfigurationStatus::Accepted {
+                                if response.status == ConfigurationStatus::Accepted
+                                    || response.status == ConfigurationStatus::RebootRequired
+                                {
                                     info!("Configuration {} updated to {}", key, value);
+                                    if response.status == ConfigurationStatus::RebootRequired {
+                                        needs_reboot = true;
+                                    }
                                 } else {
                                     warn!(
                                         "Failed to update configuration {}: {:?}",
@@ -743,6 +754,28 @@ impl<'a> Ocpp1_6Interface<'a> {
                                 );
                             }
                         }
+                    }
+                }
+            }
+            if needs_reboot {
+                match self
+                    .send_reset(ResetRequest {
+                        kind: ResetRequestStatus::Soft,
+                    })
+                    .await?
+                {
+                    Ok(response) => {
+                        if response.status == ResetResponseStatus::Accepted {
+                            info!("Charger rebooted successfully");
+                        } else {
+                            warn!("Failed to reboot the charger");
+                        }
+                    }
+                    Err(err) => {
+                        warn!(
+                            error_message = err.to_string(),
+                            "Failed to reboot the charger"
+                        );
                     }
                 }
             }
