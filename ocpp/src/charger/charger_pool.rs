@@ -15,9 +15,11 @@ lazy_static! {
     .unwrap();
 }
 
+type ChargerMap = BTreeMap<String, Weak<Mutex<Charger>>>;
+
 #[derive(Clone)]
 pub struct ChargerPool {
-    chargers: Arc<Mutex<BTreeMap<String, Weak<Mutex<Charger>>>>>,
+    chargers: Arc<Mutex<ChargerMap>>,
 }
 
 impl ChargerPool {
@@ -38,7 +40,7 @@ impl ChargerPool {
         }
     }
 
-    async fn remove_gone_chargers(chargers: &Arc<Mutex<BTreeMap<String, Weak<Mutex<Charger>>>>>) {
+    async fn remove_gone_chargers(chargers: &Arc<Mutex<ChargerMap>>) {
         let mut lock = chargers.lock().await;
         lock.retain(|_, weak| weak.strong_count() > 0);
         CONNECTED_CHARGERS.set(lock.len() as f64);
