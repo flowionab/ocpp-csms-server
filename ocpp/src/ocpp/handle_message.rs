@@ -2,10 +2,12 @@ use crate::charger::Charger;
 use crate::ocpp::ocpp_protocol::OcppProtocol;
 use futures::stream::SplitSink;
 use futures::SinkExt;
+use lazy_static::lazy_static;
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use ocpp_client::ocpp_2_0_1::OCPP2_0_1Error;
 use poem::web::websocket::Message::Text;
 use poem::web::websocket::{Message, WebSocketStream};
+use prometheus::{register_histogram_vec, HistogramVec};
 use serde::Serialize;
 use serde_json::Value;
 use sqlx::__rt::timeout;
@@ -22,6 +24,15 @@ const OCPP_ERROR: i64 = 4;
 
 type Ocpp1_6MessageQueue = Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>;
 type Ocpp2_0_1MessageQueue = Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP2_0_1Error>>>>>;
+
+lazy_static! {
+    static ref OCPP_CALLS: HistogramVec = register_histogram_vec!(
+        "ocpp_csms_server_charger_to_server_calls",
+        "Histogram of calls made from the charger towards the server",
+        &["protocol", "action"]
+    )
+    .unwrap();
+}
 
 pub async fn handle_message(
     charger: Arc<Mutex<Charger>>,
@@ -241,6 +252,11 @@ async fn handle_ocpp_1_6_call(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let (_, message_id, action, payload): (i64, String, String, Value) =
         serde_json::from_str(raw_payload)?;
+
+    let timer = OCPP_CALLS
+        .with_label_values(&[OcppProtocol::Ocpp1_6.to_string(), action.clone()])
+        .start_timer();
+
     let mut lock = charger.lock().await;
 
     info!(
@@ -404,6 +420,7 @@ async fn handle_ocpp_1_6_call(
             .await?;
         }
     }
+    timer.observe_duration();
 
     Ok(())
 }
