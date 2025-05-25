@@ -290,7 +290,7 @@ impl Api for ApiService {
 impl From<(shared::ChargerData, ChargerConnectionInfo)> for Charger {
     fn from((charger, connection_info): (shared::ChargerData, ChargerConnectionInfo)) -> Self {
         Self {
-            id: charger.id,
+            id: charger.id.clone(),
             serial_number: charger.serial_number,
             model: charger.model,
             vendor: charger.vendor,
@@ -315,12 +315,15 @@ impl From<(shared::ChargerData, ChargerConnectionInfo)> for Charger {
                 .into_iter()
                 .map(|data| Evse {
                     id: data.id.to_string(),
+                    charger_id: charger.id.clone(),
                     ocpp_id: data.ocpp_evse_id,
                     connectors: data
                         .connectors
                         .into_iter()
                         .map(|connector| crate::ocpp_csms_server::Connector {
                             id: connector.id.to_string(),
+                            charger_id: charger.id.clone(),
+                            evse_id: data.id.to_string(),
                             ocpp_id: connector.ocpp_id,
                             r#type: crate::ocpp_csms_server::ConnectorType::from(
                                 connector.connector_type,

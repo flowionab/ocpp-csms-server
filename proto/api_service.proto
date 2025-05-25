@@ -96,15 +96,18 @@ message Ocpp1_6Configuration {
 
 message Evse {
   string id = 1;
-  uint32 ocpp_id = 2;
+  string charger_id = 2;
+  uint32 ocpp_id = 3;
   repeated Connector connectors = 4;
 }
 
 message Connector {
   string id = 1;
-  uint32 ocpp_id = 2;
-  ConnectorType type = 3;
-  ConnectorStatus status = 4;
+  string charger_id = 2;
+  string evse_id = 3;
+  uint32 ocpp_id = 4;
+  ConnectorType type = 5;
+  ConnectorStatus status = 6;
 }
 
 enum ConnectorStatus {
