@@ -5,6 +5,7 @@ use tracing::warn;
 pub struct OcppConfig {
     /// This will disable any charger validation. Should only be used for testing
     pub disable_charger_auth: Option<bool>,
+    pub message_timeout_secs: Option<u64>,
 }
 
 impl OcppConfig {
@@ -23,6 +24,7 @@ impl Default for OcppConfig {
     fn default() -> Self {
         Self {
             disable_charger_auth: Some(false),
+            message_timeout_secs: Some(30),
         }
     }
 }

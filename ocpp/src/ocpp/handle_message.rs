@@ -6,8 +6,11 @@ use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use ocpp_client::ocpp_2_0_1::OCPP2_0_1Error;
 use poem::web::websocket::Message::Text;
 use poem::web::websocket::{Message, WebSocketStream};
+use serde::Serialize;
 use serde_json::Value;
+use sqlx::__rt::timeout;
 use std::collections::BTreeMap;
+use std::future::Future;
 use std::sync::Arc;
 use tokio::sync::oneshot::Sender;
 use tokio::sync::Mutex;
@@ -249,57 +252,96 @@ async fn handle_ocpp_1_6_call(
         "Incoming call <--"
     );
 
+    let duration = core::time::Duration::from_secs(
+        lock.config
+            .ocpp
+            .clone()
+            .unwrap_or_default()
+            .message_timeout_secs
+            .unwrap_or(30),
+    );
+
     let response: Result<Value, OCPP1_6Error> = match action.as_str() {
-        "Authorize" => lock
-            .ocpp1_6()
-            .handle_authorize(serde_json::from_value(payload)?)
+        "Authorize" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_authorize(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "BootNotification" => lock
-            .ocpp1_6()
-            .handle_boot_notification(serde_json::from_value(payload)?)
+        }
+        "BootNotification" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_boot_notification(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "DataTransfer" => lock
-            .ocpp1_6()
-            .handle_data_transfer(serde_json::from_value(payload)?)
+        }
+        "DataTransfer" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_data_transfer(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "DiagnosticsStatusNotification" => lock
-            .ocpp1_6()
-            .handle_diagnostics_status_notification(serde_json::from_value(payload)?)
+        }
+        "DiagnosticsStatusNotification" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_diagnostics_status_notification(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "FirmwareStatusNotification" => lock
-            .ocpp1_6()
-            .handle_firmware_status_notification(serde_json::from_value(payload)?)
+        }
+        "FirmwareStatusNotification" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_firmware_status_notification(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "Heartbeat" => lock
-            .ocpp1_6()
-            .handle_heartbeat(serde_json::from_value(payload)?)
+        }
+        "Heartbeat" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_heartbeat(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "MeterValues" => lock
-            .ocpp1_6()
-            .handle_meter_values(serde_json::from_value(payload)?)
+        }
+        "MeterValues" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_meter_values(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "StartTransaction" => lock
-            .ocpp1_6()
-            .handle_start_transaction(serde_json::from_value(payload)?)
+        }
+        "StartTransaction" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_start_transaction(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "StatusNotification" => lock
-            .ocpp1_6()
-            .handle_status_notification(serde_json::from_value(payload)?)
+        }
+        "StatusNotification" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_status_notification(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
-        "StopTransaction" => lock
-            .ocpp1_6()
-            .handle_stop_transaction(serde_json::from_value(payload)?)
+        }
+        "StopTransaction" => {
+            handle_request(
+                duration,
+                lock.ocpp1_6()
+                    .handle_stop_transaction(serde_json::from_value(payload)?),
+            )
             .await
-            .map(|i| serde_json::to_value(&i).unwrap()),
+        }
         _ => Err(OCPP1_6Error::new_not_implemented(&format!(
             "Action '{}' is not implemented on this server",
             action
@@ -580,4 +622,17 @@ async fn handle_ocpp_2_0_1_call(
     }
 
     Ok(())
+}
+
+async fn handle_request<T: Serialize>(
+    duration: core::time::Duration,
+    future: impl Future<Output = Result<T, OCPP1_6Error>>,
+) -> Result<Value, OCPP1_6Error> {
+    timeout(duration, future)
+        .await
+        .map_err(|_| OCPP1_6Error::InternalError {
+            description: "Request timed out".to_string(),
+            details: Value::Null,
+        })?
+        .map(|i| serde_json::to_value(&i).unwrap())
 }

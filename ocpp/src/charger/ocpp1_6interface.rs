@@ -531,6 +531,11 @@ impl<'a> Ocpp1_6Interface<'a> {
                         .data
                         .evse_by_ocpp_id(request.connector_id)
                         .ok_or_else(|| {
+                            warn!(
+                                connector_id = request.connector_id,
+                                charger_id = self.charger.id,
+                                "No EVSE found for the given connector ID",
+                            );
                             OCPP1_6Error::new_internal_str(
                                 "No EVSE found for the given connector ID",
                             )
