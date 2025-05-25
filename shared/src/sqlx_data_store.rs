@@ -247,7 +247,7 @@ impl DataStore for SqlxDataStore<Postgres> {
         Ok(sqlx::query_as!(
             Transaction,
             "
-                SELECT * FROM transactions WHERE charger_id = $1 AND evse_id = $2 AND end_time IS NULL
+                SELECT * FROM transactions WHERE charger_id = $1 AND evse_id = $2 AND end_time IS NULL LIMIT 1
             ",
             charger_id,
             evse_id

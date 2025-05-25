@@ -584,16 +584,26 @@ impl<'a> Ocpp1_6Interface<'a> {
             if let Some(evse) = self.charger.data.evse_by_ocpp_id_mut(request.connector_id) {
                 let evse_id = evse.id;
                 if let Some(connector) = evse.connector_by_ocpp_id_mut(1) {
-                    self.charger
-                        .event_manager
-                        .send_connector_status_event(
-                            self.charger.id.clone(),
-                            request.status.into(),
-                            request.timestamp.unwrap_or_else(Utc::now),
-                            evse_id,
-                            connector.id,
-                        )
-                        .await;
+                    info!(
+                        "Sending connector status event for charger {}: connector {} is now {:?}",
+                        self.charger.id, connector.ocpp_id, request.status
+                    );
+                    let event_manager = self.charger.event_manager.clone();
+                    let charger_id = self.charger.id.clone();
+                    let connector_id = connector.id;
+                    let status = request.status.into();
+                    let timestamp = request.timestamp.unwrap_or_else(Utc::now);
+                    tokio::spawn(async move {
+                        event_manager
+                            .send_connector_status_event(
+                                charger_id,
+                                status,
+                                timestamp,
+                                evse_id,
+                                connector_id,
+                            )
+                            .await
+                    });
                 }
             }
             if let Err(err) = self.charger.sync_data().await {
