@@ -1,5 +1,6 @@
 use crate::charger::ChargerPool;
 use crate::event::EventManager;
+use crate::ocpp::metrics_handler;
 use crate::ocpp::ocpp_handler::ocpp_handler;
 use poem::listener::TcpListener;
 use poem::{get, EndpointExt, Route, Server};
@@ -26,17 +27,19 @@ pub async fn start_ocpp_server(
                 .expect("Could not decode EASEE_MASTER_PASSWORD")
         });
 
-    let app = Route::new().at(
-        "/:id",
-        get(ocpp_handler).data((
-            config.clone(),
-            data_store,
-            charger_pool.clone(),
-            node_address.clone(),
-            easee_master_password.clone(),
-            event_manager.clone(),
-        )),
-    );
+    let app = Route::new()
+        .at("/metrics", get(metrics_handler::metrics_handler))
+        .at(
+            "/:id",
+            get(ocpp_handler).data((
+                config.clone(),
+                data_store,
+                charger_pool.clone(),
+                node_address.clone(),
+                easee_master_password.clone(),
+                event_manager.clone(),
+            )),
+        );
 
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = env::var("OCPP_PORT").unwrap_or_else(|_| "50051".to_string());

@@ -1,6 +1,7 @@
 mod extract_password;
 mod extract_protocol_header;
 mod handle_message;
+mod metrics_handler;
 mod ocpp_handler;
 mod ocpp_protocol;
 mod select_protocol;

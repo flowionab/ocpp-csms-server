@@ -17,6 +17,7 @@ spec:
     matchLabels:
       {{- include "ocpp-csms-server.ocppSelectorLabels" . | nindent 6 }}
   endpoints:
-    - port: http-metrics
+    - port: http
       interval: 15s
+      scrapeTimeout: 14s
       path: /metrics
