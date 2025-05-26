@@ -9,7 +9,6 @@ use rust_ocpp::v1_6::messages::change_configuration::{
     TRANSACTION_MESSAGE_RETRY_INTERVAL, UNLOCK_CONNECTOR_ON_EV_SIDE_DISCONNECT,
     WEB_SOCKET_PING_INTERVAL,
 };
-use rust_ocpp::v1_6::types::Measurand;
 use sqlx::FromRow;
 use std::collections::BTreeMap;
 
@@ -74,19 +73,13 @@ impl ChargerSettings {
         entries.insert(CLOCK_ALIGNED_DATA_INTERVAL.to_string(), "300".to_string());
         entries.insert(
             METER_VALUES_ALIGNED_DATA.to_string(),
-            [Measurand::Voltage, Measurand::Temperature].join(","),
+            "Voltage,Temperature".to_string(),
         );
         entries.insert(METER_VALUE_SAMPLE_INTERVAL.to_string(), "30".to_string());
         entries.insert(
             METER_VALUES_SAMPLED_DATA.to_string(),
-            [
-                Measurand::PowerActiveExport,
-                Measurand::CurrentExport,
-                Measurand::CurrentOffered,
-                Measurand::EnergyActiveExportRegister,
-                Measurand::SoC,
-            ]
-            .join(","),
+            "Current.Export,Current.Offered,Power.Active.Export,Energy.Active.Export.Register,SoC"
+                .to_string(),
         );
 
         entries
