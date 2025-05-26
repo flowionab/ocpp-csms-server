@@ -55,19 +55,16 @@ impl AmqpEventHandler {
 
         let channel = self.connection.create_channel().await?;
 
-        let properties =
-            BasicProperties::default().with_content_encoding("application/json".to_string().into());
-
         channel
             .basic_publish(
                 EVENT_EXCHANGE_NAME,
                 "",
                 Default::default(),
                 raw_payload.as_bytes(),
-                properties,
+                BasicProperties::default(),
             )
             .await?;
-
+        info!(payload = raw_payload, "sent event to AMQP exchange");
         Ok(())
     }
 }
