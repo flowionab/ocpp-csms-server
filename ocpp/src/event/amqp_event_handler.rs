@@ -21,7 +21,13 @@ impl AmqpEventHandler {
 
         let url = env::var("AMQP_URL").expect("AMQP_URL must be set");
 
-        let connection = Connection::connect(&url, ConnectionProperties::default()).await?;
+        let connection = Connection::connect(
+            &url,
+            ConnectionProperties::default()
+                .with_executor(tokio_executor_trait::Tokio::current())
+                .with_reactor(tokio_reactor_trait::Tokio),
+        )
+        .await?;
 
         info!("connected to amqp server");
 
