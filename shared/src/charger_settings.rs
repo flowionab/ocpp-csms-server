@@ -78,7 +78,7 @@ impl ChargerSettings {
         entries.insert(METER_VALUE_SAMPLE_INTERVAL.to_string(), "30".to_string());
         entries.insert(
             METER_VALUES_SAMPLED_DATA.to_string(),
-            "Current.Export,Current.Offered,Power.Active.Export,Energy.Active.Export.Register,SoC"
+            "Current.Import,Current.Offered,Power.Active.Import,Energy.Active.Import.Register"
                 .to_string(),
         );
 

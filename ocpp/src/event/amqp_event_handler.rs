@@ -61,6 +61,7 @@ impl AmqpEventHandler {
                 properties,
             )
             .await?;
+
         Ok(())
     }
 }

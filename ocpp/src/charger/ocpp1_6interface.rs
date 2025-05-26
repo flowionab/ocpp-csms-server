@@ -60,7 +60,9 @@ use serde::Serialize;
 use shared::{
     ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Configuration, Transaction,
 };
+use std::time::Duration;
 use tokio::sync::oneshot;
+use tokio::time::timeout;
 use tracing::{error, info, instrument, warn};
 use uuid::Uuid;
 
@@ -345,8 +347,18 @@ impl<'a> Ocpp1_6Interface<'a> {
             lock.insert(message_id.to_string(), sender);
         }
 
+        let timeout_duration = Duration::from_secs(
+            self.charger
+                .config
+                .ocpp
+                .clone()
+                .unwrap_or_default()
+                .message_timeout_secs
+                .unwrap_or(30),
+        );
+
         info!("Waiting for response");
-        match receiver.await? {
+        match timeout(timeout_duration, receiver).await?? {
             Ok(val) => {
                 let result = serde_json::from_value(val)?;
                 Ok(Ok(result))

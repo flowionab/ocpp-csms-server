@@ -269,6 +269,7 @@ impl Api for ApiService {
         let payload = request.into_inner();
         let evse_id = Uuid::from_str(&payload.evse_id)
             .map_err(|_| Status::invalid_argument("Invalid evse id"))?;
+
         self.data_store
             .get_ongoing_transaction(&payload.charger_id, evse_id)
             .await
