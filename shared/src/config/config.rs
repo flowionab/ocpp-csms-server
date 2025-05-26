@@ -2,6 +2,7 @@ use crate::config::amqp_config::AmqpConfig;
 use crate::config::ocpp_config::OcppConfig;
 use serde::{Deserialize, Serialize};
 
+/// Main configuration structure for the application.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub ocpp: Option<OcppConfig>,

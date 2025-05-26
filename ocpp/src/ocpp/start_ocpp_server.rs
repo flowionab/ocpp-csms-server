@@ -8,9 +8,8 @@ use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
-use tracing::{info, instrument};
+use tracing::info;
 
-#[instrument(skip_all)]
 pub async fn start_ocpp_server(
     config: &Config,
     data_store: Arc<dyn DataStore>,

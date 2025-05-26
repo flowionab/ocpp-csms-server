@@ -52,7 +52,7 @@ use rust_ocpp::v1_6::messages::stop_transaction::{
 use rust_ocpp::v1_6::messages::trigger_message::{TriggerMessageRequest, TriggerMessageResponse};
 use rust_ocpp::v1_6::types::{
     AuthorizationStatus, ChargePointStatus, ConfigurationStatus, DataTransferStatus, IdTagInfo,
-    MessageTrigger, RegistrationStatus, ResetRequestStatus, ResetResponseStatus,
+    Measurand, MessageTrigger, RegistrationStatus, ResetRequestStatus, ResetResponseStatus,
     TriggerMessageStatus,
 };
 use serde::de::DeserializeOwned;
@@ -457,8 +457,256 @@ impl<'a> Ocpp1_6Interface<'a> {
     #[instrument(skip(self))]
     pub async fn handle_meter_values(
         &mut self,
-        _request: MeterValuesRequest,
+        request: MeterValuesRequest,
     ) -> Result<MeterValuesResponse, OCPP1_6Error> {
+        for meter_value in request.meter_value {
+            for sampled_value in meter_value.sampled_value {
+                match sampled_value.measurand.unwrap_or_default() {
+                    Measurand::CurrentExport => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received CurrentExport metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::CurrentImport => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received CurrentExport metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::CurrentOffered => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received CurrentOffered metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyActiveExportRegister => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyActiveExportRegister metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyActiveImportRegister => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyActiveImportRegister metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyReactiveExportRegister => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyReactiveExportRegister metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyReactiveImportRegister => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyReactiveImportRegister metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyActiveExportInterval => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyActiveExportInterval metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyActiveImportInterval => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyActiveExportInterval metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyReactiveExportInterval => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyReactiveExportInterval metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::EnergyReactiveImportInterval => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received EnergyReactiveImportInterval metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::Frequency => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received Frequency metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::PowerActiveExport => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received PowerActiveExport metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::PowerActiveImport => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received PowerActiveImport metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::PowerFactor => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received PowerFactor metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::PowerOffered => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received PowerOffered metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::PowerReactiveExport => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received PowerReactiveExport metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::PowerReactiveImport => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received PowerReactiveImport metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::Rpm => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received Rpm metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::SoC => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received SoC metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::Temperature => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received Temperature metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                    Measurand::Voltage => {
+                        info!(
+                            charger_id = self.charger.id,
+                            phases = format!("{:#?}", sampled_value.phase),
+                            location = format!("{:#?}", sampled_value.location),
+                            unit = format!("{:#?}", sampled_value.unit),
+                            context = format!("{:#?}", sampled_value.context),
+                            "Received Voltage metric: {}",
+                            sampled_value.value
+                        );
+                    }
+                }
+            }
+        }
         Ok(MeterValuesResponse {})
     }
 

@@ -37,16 +37,20 @@ type Ocpp1_6MessageQueue = Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1
 pub struct Charger {
     pub id: String,
 
-    #[allow(dead_code)]
+    /// The shared configuration for all chargers
+    // TODO: Wrap this in an arc to avoid cloning it
     pub config: Config,
     pub data_store: Arc<dyn DataStore>,
     pub authenticated: bool,
 
+    // This is a cached version of the data, perhaps it is redundant
     pub data: ChargerData,
 
     pub password: Option<String>,
 
     pub protocol: Option<OcppProtocol>,
+
+    // We should hide this behind a trait in order to improve testability
     pub sink: Option<Arc<Mutex<SplitSink<WebSocketStream, Message>>>>,
 
     pub message_queue: Ocpp1_6MessageQueue,

@@ -1,12 +1,15 @@
 use crate::Config;
 use rust_ocpp::v1_6::messages::change_configuration::{
     ALLOW_OFFLINE_TX_FOR_UNKNOWN_ID, AUTHORIZATION_CACHE_ENABLED, AUTHORIZE_REMOTE_TX_REQUESTS,
-    CONNECTION_TIME_OUT, LOCAL_AUTHORIZE_OFFLINE, LOCAL_AUTH_LIST_ENABLED, LOCAL_PRE_AUTHORIZE,
-    MAX_ENERGY_ON_INVALID_ID, MINIMUM_STATUS_DURATION, RESET_RETRIES,
-    STOP_TRANSACTION_ON_EV_SIDE_DISCONNECT, STOP_TRANSACTION_ON_INVALID_ID,
-    TRANSACTION_MESSAGE_ATTEMPTS, TRANSACTION_MESSAGE_RETRY_INTERVAL,
-    UNLOCK_CONNECTOR_ON_EV_SIDE_DISCONNECT, WEB_SOCKET_PING_INTERVAL,
+    CLOCK_ALIGNED_DATA_INTERVAL, CONNECTION_TIME_OUT, LOCAL_AUTHORIZE_OFFLINE,
+    LOCAL_AUTH_LIST_ENABLED, LOCAL_PRE_AUTHORIZE, MAX_ENERGY_ON_INVALID_ID,
+    METER_VALUES_ALIGNED_DATA, METER_VALUES_SAMPLED_DATA, METER_VALUE_SAMPLE_INTERVAL,
+    MINIMUM_STATUS_DURATION, RESET_RETRIES, STOP_TRANSACTION_ON_EV_SIDE_DISCONNECT,
+    STOP_TRANSACTION_ON_INVALID_ID, TRANSACTION_MESSAGE_ATTEMPTS,
+    TRANSACTION_MESSAGE_RETRY_INTERVAL, UNLOCK_CONNECTOR_ON_EV_SIDE_DISCONNECT,
+    WEB_SOCKET_PING_INTERVAL,
 };
+use rust_ocpp::v1_6::types::Measurand;
 use sqlx::FromRow;
 use std::collections::BTreeMap;
 
@@ -66,6 +69,24 @@ impl ChargerSettings {
                 false => "true",
             }
             .to_string(),
+        );
+
+        entries.insert(CLOCK_ALIGNED_DATA_INTERVAL.to_string(), "300".to_string());
+        entries.insert(
+            METER_VALUES_ALIGNED_DATA.to_string(),
+            [Measurand::Voltage, Measurand::Temperature].join(","),
+        );
+        entries.insert(METER_VALUE_SAMPLE_INTERVAL.to_string(), "30".to_string());
+        entries.insert(
+            METER_VALUES_SAMPLED_DATA.to_string(),
+            [
+                Measurand::PowerActiveExport,
+                Measurand::CurrentExport,
+                Measurand::CurrentOffered,
+                Measurand::EnergyActiveExportRegister,
+                Measurand::SoC,
+            ]
+            .join(","),
         );
 
         entries
