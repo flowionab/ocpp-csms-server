@@ -1,4 +1,5 @@
 use crate::connector_data::ConnectorData;
+use crate::phase_metric::PhaseMetric;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -7,6 +8,9 @@ pub struct EvseData {
     pub id: Uuid,
     pub ocpp_evse_id: u32,
     pub connectors: Vec<ConnectorData>,
+    pub watt_output: PhaseMetric<f32>,
+    pub ampere_output: PhaseMetric<f32>,
+    pub voltage: PhaseMetric<f32>,
 }
 
 impl EvseData {
@@ -15,6 +19,9 @@ impl EvseData {
             id: Uuid::new_v4(),
             ocpp_evse_id,
             connectors: vec![ConnectorData::new(1)],
+            watt_output: PhaseMetric::default(),
+            ampere_output: PhaseMetric::default(),
+            voltage: PhaseMetric::default(),
         }
     }
 

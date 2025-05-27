@@ -15,6 +15,8 @@ pub struct AmqpEventHandler {
 
 const EVENT_EXCHANGE_NAME: &str = "ocpp_csms_server_events";
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 impl AmqpEventHandler {
     pub async fn setup() -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> {
         info!("setting up amqp event handler");
@@ -24,6 +26,7 @@ impl AmqpEventHandler {
         let connection = Connection::connect(
             &url,
             ConnectionProperties::default()
+                .with_connection_name(format!("ocpp_csms_server:{}", VERSION).into())
                 .with_executor(tokio_executor_trait::Tokio::current())
                 .with_reactor(tokio_reactor_trait::Tokio),
         )
@@ -43,6 +46,8 @@ impl AmqpEventHandler {
             .await?;
 
         info!("declared exchange 'ocpp_csms_server_events'");
+
+        channel.close(0, "").await?;
 
         Ok(AmqpEventHandler { connection })
     }
@@ -65,6 +70,9 @@ impl AmqpEventHandler {
             )
             .await?;
         info!(payload = raw_payload, "sent event to AMQP exchange");
+
+        channel.close(0, "").await?;
+
         Ok(())
     }
 }
