@@ -87,6 +87,18 @@ pub trait DataStore: Send + Sync + Debug {
         watt_charged: i32,
     ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
 
+    async fn update_transaction_is_authorized(
+        &self,
+        transaction_id: Uuid,
+        is_authorized: bool,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
+
+    async fn update_transaction_meter_start(
+        &self,
+        transaction_id: Uuid,
+        meter_start: i32,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
+
     async fn get_transaction(
         &self,
         transaction_id: Uuid,

@@ -235,6 +235,7 @@ impl DataStore for SqlxDataStore<Postgres> {
             start_time,
             end_time: None,
             watt_charged: 0,
+            energy_meter_at_start: None,
             is_authorized,
         })?)
     }
@@ -288,6 +289,40 @@ impl DataStore for SqlxDataStore<Postgres> {
             watt_charged,
             charger_id,
             ocpp_transaction_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn update_transaction_is_authorized(
+        &self,
+        transaction_id: Uuid,
+        is_authorized: bool,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query!(
+            "
+                UPDATE transactions SET is_authorized = $1 WHERE id = $2
+            ",
+            is_authorized,
+            transaction_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn update_transaction_meter_start(
+        &self,
+        transaction_id: Uuid,
+        meter_start: i32,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query!(
+            "
+                UPDATE transactions SET energy_meter_at_start = $1 WHERE id = $2
+            ",
+            meter_start,
+            transaction_id
         )
         .execute(&self.pool)
         .await?;

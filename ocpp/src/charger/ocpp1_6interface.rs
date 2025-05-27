@@ -497,6 +497,21 @@ impl<'a> Ocpp1_6Interface<'a> {
 
         let is_tag_valid = self.validate_tag(&tag).await?;
 
+        if let Some(transaction) = &transaction {
+            let meter_start = request.meter_start;
+            self.charger
+                .data_store
+                .update_transaction_meter_start(transaction.id, meter_start)
+                .await
+                .map_err(|e| {
+                    error!(
+                        error_message = e.to_string(),
+                        "Failed to update transaction"
+                    );
+                    OCPP1_6Error::new_internal_str("Failed to update transaction")
+                })?;
+        }
+
         let transaction_id = transaction
             .map(|t| t.ocpp_transaction_id.parse::<i32>())
             .unwrap_or(Ok(0))
@@ -707,7 +722,6 @@ impl<'a> Ocpp1_6Interface<'a> {
         connector_id: u32,
         end_time: &Option<chrono::DateTime<Utc>>,
     ) -> Result<(), OCPP1_6Error> {
-        info!("Ending ongoing transaction for connector {}", connector_id);
         if let Some(transaction) = self.get_ongoing_transaction(connector_id).await? {
             info!(
                 "Ending transaction {} for connector {}",

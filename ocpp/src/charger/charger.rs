@@ -304,7 +304,21 @@ impl Charger {
                                     })?;
                                 Ok(transaction)
                             }
-                            Some(transaction) => Ok(transaction),
+                            Some(transaction) => {
+                                self.data_store
+                                    .update_transaction_is_authorized(transaction.id, true)
+                                    .await
+                                    .map_err(|error| {
+                                        error!(
+                                            error_message = error.to_string(),
+                                            "Failed to update transaction, due to internal error"
+                                        );
+                                        Status::internal(
+                                            "Failed to update transaction, due to internal error",
+                                        )
+                                    })?;
+                                Ok(transaction)
+                            }
                         }
                     }
                     RemoteStartStopStatus::Rejected => {
