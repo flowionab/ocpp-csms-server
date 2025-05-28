@@ -42,6 +42,11 @@
         "ordinal": 7,
         "name": "evse_id",
         "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "energy_meter_at_start",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -58,7 +63,8 @@
       true,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
   "hash": "223e3e424a94e7dec88567debbf8f1afa45fdf404e8e4220e185fe65e6ba3a4d"
