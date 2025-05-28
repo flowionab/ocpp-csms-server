@@ -2,12 +2,13 @@
 
 mod charger;
 mod event;
-mod ocpp;
 mod server;
 
-use crate::charger::ChargerPool;
+mod network_interface;
+
+use crate::charger::{ChargerFactory, ChargerPool};
 use crate::event::EventManager;
-use crate::ocpp::start_ocpp_server;
+use crate::network_interface::json::OcppJsonNetworkInterface;
 use crate::server::start_server;
 use shared::{configure_tracing, read_config, SqlxDataStore};
 use sqlx::postgres::PgPoolOptions;
@@ -23,6 +24,18 @@ pub mod ocpp_csms_server {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let _ = dotenvy::dotenv();
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = env::var("OCPP_PORT").unwrap_or_else(|_| "50051".to_string());
+    let node_address =
+        env::var("NODE_ADDRESS").unwrap_or_else(|_| "http://localhost:50052".to_string());
+
+    let easee_master_password: Option<String> =
+        env::var("EASEE_MASTER_PASSWORD").ok().map(|password| {
+            hex::decode(password)
+                .map(|bytes| String::from_utf8(bytes).unwrap())
+                .expect("Could not decode EASEE_MASTER_PASSWORD")
+        });
+
     configure_tracing()?;
     info!("starting up csms server");
     let config = read_config().await?;
@@ -56,10 +69,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     let charger_pool = ChargerPool::new();
 
-    try_join!(
-        start_ocpp_server(&config, data_store, &charger_pool, event_manager),
-        start_server(&charger_pool)
-    )?;
+    let charger_factory = ChargerFactory::new(
+        Arc::new(config),
+        Arc::clone(&data_store) as Arc<dyn shared::DataStore + Send + Sync>,
+        &node_address,
+        easee_master_password,
+        &event_manager,
+        &charger_pool,
+    );
+
+    let interface = OcppJsonNetworkInterface::new(charger_factory, &host, &port);
+
+    try_join!(interface.start(), start_server(&charger_pool))?;
 
     Ok(())
 }

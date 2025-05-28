@@ -1,6 +1,6 @@
 use crate::charger_settings::ChargerSettings;
 use crate::evse_data::EvseData;
-use crate::Ocpp1_6Configuration;
+use crate::{ConnectorData, Ocpp1_6Configuration};
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -50,5 +50,11 @@ impl ChargerData {
 
     pub fn evse_mut(&mut self, evse_id: Uuid) -> Option<&mut EvseData> {
         self.evses.iter_mut().find(|evse| evse.id == evse_id)
+    }
+
+    /// In OCPP 1.6, evses can only have one connector with ID 1. Here we assume and get that directly
+    pub fn ocpp_1_6_get_connector(&mut self, connector_id: u32) -> Option<&mut ConnectorData> {
+        self.evse_by_ocpp_id_mut(connector_id)
+            .and_then(|evse| evse.connector_by_ocpp_id_mut(1))
     }
 }

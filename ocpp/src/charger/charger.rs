@@ -1,59 +1,40 @@
 use crate::charger::charger_model::ChargerModel;
-use crate::charger::ocpp1_6interface::Ocpp1_6Interface;
-use crate::charger::ocpp_2_0_interface::Ocpp2_0_1Interface;
 use crate::event::EventManager;
-use crate::ocpp::OcppProtocol;
+use crate::network_interface::ProtocolHandle;
 use crate::server::map_ocpp1_6_error_to_status;
 use chrono::Utc;
-use futures::stream::SplitSink;
-use ocpp_client::ocpp_1_6::OCPP1_6Error;
-use poem::http::StatusCode;
-use poem::web::websocket::{Message, WebSocketStream};
-use poem::Response;
 use rand::Rng;
 use rust_ocpp::v1_6::messages::cancel_reservation::CancelReservationRequest;
 use rust_ocpp::v1_6::messages::change_availability::ChangeAvailabilityRequest;
+use rust_ocpp::v1_6::messages::change_configuration::ChangeConfigurationRequest;
 use rust_ocpp::v1_6::messages::remote_start_transaction::RemoteStartTransactionRequest;
 use rust_ocpp::v1_6::messages::remote_stop_transaction::RemoteStopTransactionRequest;
 use rust_ocpp::v1_6::messages::reset::ResetRequest;
 use rust_ocpp::v1_6::types::{
-    AvailabilityStatus, AvailabilityType, CancelReservationStatus, RemoteStartStopStatus,
-    ResetRequestStatus, ResetResponseStatus,
+    AvailabilityStatus, AvailabilityType, CancelReservationStatus, ConfigurationStatus,
+    RemoteStartStopStatus, ResetRequestStatus, ResetResponseStatus,
 };
-use serde_json::Value;
 use shared::{ChargerData, Config};
 use shared::{DataStore, Transaction};
-use std::collections::BTreeMap;
 use std::sync::Arc;
-use tokio::sync::oneshot::Sender;
-use tokio::sync::Mutex;
 use tonic::Status;
-use tracing::{error, instrument, warn};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
-type Ocpp1_6MessageQueue = Arc<Mutex<BTreeMap<String, Sender<Result<Value, OCPP1_6Error>>>>>;
-
-#[derive(Clone)]
 pub struct Charger {
     pub id: String,
 
+    pub handle: ProtocolHandle,
+
     /// The shared configuration for all chargers
-    // TODO: Wrap this in an arc to avoid cloning it
-    pub config: Config,
-    pub data_store: Arc<dyn DataStore>,
+    pub config: Arc<Config>,
+    pub data_store: Arc<dyn DataStore + Send + Sync>,
     pub authenticated: bool,
 
     // This is a cached version of the data, perhaps it is redundant
     pub data: ChargerData,
 
     pub password: Option<String>,
-
-    pub protocol: Option<OcppProtocol>,
-
-    // We should hide this behind a trait in order to improve testability
-    pub sink: Option<Arc<Mutex<SplitSink<WebSocketStream, Message>>>>,
-
-    pub message_queue: Ocpp1_6MessageQueue,
 
     pub node_address: String,
 
@@ -63,53 +44,36 @@ pub struct Charger {
 }
 
 impl Charger {
-    #[instrument(skip_all)]
     pub async fn setup(
         id: &str,
-        config: &Config,
-        data_store: Arc<dyn DataStore>,
-        message_queue: Ocpp1_6MessageQueue,
+        config: Arc<Config>,
+        handle: ProtocolHandle,
+        data_store: Arc<dyn DataStore + Send + Sync>,
         node_address: &str,
         easee_master_password: Option<String>,
         event_manager: EventManager,
-    ) -> Result<Self, Response> {
-        let data = data_store.get_charger_data_by_id(id).await.map_err(|e| {
-            error!(
-                error_message = e.to_string(),
-                "Could not retrieve charger data"
-            );
-            Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body("Could not retrieve charger data".to_string())
-        })?;
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let data = data_store.get_charger_data_by_id(id).await?;
 
-        let authenticated = config
-            .ocpp
-            .clone()
-            .unwrap_or_default()
-            .disable_charger_auth
-            .unwrap_or_default();
+        let authenticated = false;
 
         Ok(Self {
             data_store,
             id: id.to_string(),
+            handle,
             authenticated,
             config: config.clone(),
-            data: data.unwrap_or_else(|| shared::ChargerData {
+            data: data.unwrap_or_else(|| ChargerData {
                 id: id.to_string(),
                 ..Default::default()
             }),
             password: None,
-            protocol: None,
-            sink: None,
-            message_queue,
             node_address: node_address.to_string(),
             easee_master_password,
             event_manager,
         })
     }
 
-    #[instrument(skip(self))]
     pub async fn ping(&mut self) {
         if let Err(error) = self
             .data_store
@@ -123,15 +87,6 @@ impl Charger {
         }
     }
 
-    pub fn set_protocol(&mut self, protocol: OcppProtocol) {
-        self.protocol = Some(protocol)
-    }
-
-    pub fn attach_sink(&mut self, sink: Arc<Mutex<SplitSink<WebSocketStream, Message>>>) {
-        self.sink = Some(sink)
-    }
-
-    #[instrument(skip_all)]
     pub async fn sync_data(
         &self,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -139,113 +94,17 @@ impl Charger {
         Ok(())
     }
 
-    #[instrument(skip_all)]
-    pub async fn authenticate_with_password(
-        &mut self,
-        password: Option<String>,
-    ) -> Result<(), Response> {
-        self.password = password.clone();
-
-        if let Some(ChargerModel::Easee(_)) = self.model() {
-            return match &self.easee_master_password {
-                Some(master_password) => {
-                    if password.as_ref() == Some(master_password) {
-                        self.authenticated = true;
-                        Ok(())
-                    } else {
-                        warn!(
-                            charger_id = self.id.to_string(),
-                            "The charger is an Easee charger, but the password is incorrect"
-                        );
-                        Err(Response::builder()
-                            .status(StatusCode::FORBIDDEN)
-                            .body("Invalid password".to_string()))
-                    }
-                }
-                None => {
-                    warn!(
-                        charger_id = self.id.to_string(),
-                        "The charger is an Easee charger, but the EASEE_MASTER_PASSWORD env var is not set, will reject it for now"
-                    );
-                    Err(Response::builder()
-                        .status(StatusCode::FORBIDDEN)
-                        .body("Easee charger are currently not accepted".to_string()))
-                }
-            };
-        }
-
-        let hashed_password_opt = self.data_store.get_password(&self.id).await.map_err(|e| {
-            error!(
-                error_message = e.to_string(),
-                "Failed to validate credentials"
-            );
-            Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body("Failed to validate credentials".to_string())
-        })?;
-        match &hashed_password_opt {
-            Some(hashed_password) => match &password {
-                None => {
-                    warn!("Missing credentials");
-                    Err(Response::builder()
-                        .status(StatusCode::FORBIDDEN)
-                        .body("Missing credentials".to_string()))
-                }
-                Some(p) => {
-                    let result = bcrypt::verify(p, hashed_password).map_err(|_e| {
-                        error!("Failed to validate credentials");
-                        Response::builder()
-                            .status(StatusCode::INTERNAL_SERVER_ERROR)
-                            .body("Failed to validate credentials".to_string())
-                    })?;
-
-                    match result {
-                        true => {
-                            self.authenticated = true;
-                            Ok(())
-                        }
-                        false => {
-                            warn!("Invalid credentials");
-                            Err(Response::builder()
-                                .status(StatusCode::FORBIDDEN)
-                                .body("Invalid credentials".to_string()))
-                        }
-                    }
-                }
-            },
-            None => {
-                self.authenticated = false;
-                if password.is_some() {
-                    warn!(charger_id = self.id.to_string(), "The charger does have existing credentials, but it has not been onboarded yet to our system, ignoring the credentials for now...")
-                }
-                Ok(())
-            }
-        }
-    }
-
-    pub fn ocpp1_6(&mut self) -> Ocpp1_6Interface {
-        Ocpp1_6Interface::new(self)
-    }
-
-    #[allow(dead_code)]
-    pub fn ocpp2_0_1(&mut self) -> Ocpp2_0_1Interface {
-        Ocpp2_0_1Interface::new(self)
-    }
-
-    #[instrument(skip_all)]
     pub async fn start_transaction(&mut self, evse_id: Uuid) -> Result<Transaction, Status> {
-        let protocol = self.get_protocol()?;
         let evse = self
             .data
             .evse(evse_id)
             .ok_or_else(|| Status::not_found("Evse not found"))?;
         let evse_id = evse.id;
 
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
                 let ocpp_evse_id = evse.ocpp_evse_id;
-                let response = self
-                    .ocpp1_6()
+                let response = handle
                     .send_remote_start_transaction(RemoteStartTransactionRequest {
                         connector_id: Some(ocpp_evse_id),
                         id_tag: "central".to_string(),
@@ -326,14 +185,13 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
-    #[instrument(skip_all)]
     pub async fn stop_transaction(&mut self, transaction_id: Uuid) -> Result<Transaction, Status> {
-        let protocol = self.get_protocol()?;
-
         let transaction = self
             .data_store
             .get_transaction(transaction_id)
@@ -350,10 +208,9 @@ impl Charger {
                 Status::not_found("Transaction not found")
             })?;
 
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
-                let response = self
-                    .ocpp1_6()
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
                     .send_remote_stop_transaction(RemoteStopTransactionRequest {
                         transaction_id: transaction.ocpp_transaction_id.parse().map_err(
                             |_error| {
@@ -379,17 +236,16 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
-    #[instrument(skip_all)]
     pub async fn reboot_soft(&mut self) -> Result<(), Status> {
-        let protocol = self.get_protocol()?;
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
-                let response = self
-                    .ocpp1_6()
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
                     .send_reset(ResetRequest {
                         kind: ResetRequestStatus::Soft,
                     })
@@ -410,17 +266,16 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
-    #[instrument(skip_all)]
     pub async fn reboot_hard(&mut self) -> Result<(), Status> {
-        let protocol = self.get_protocol()?;
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
-                let response = self
-                    .ocpp1_6()
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
                     .send_reset(ResetRequest {
                         kind: ResetRequestStatus::Hard,
                     })
@@ -441,17 +296,16 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
-    #[instrument(skip_all)]
     pub async fn cancel_outlet_reservation(&mut self, _outlet_id: &str) -> Result<(), Status> {
-        let protocol = self.get_protocol()?;
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
-                let response = self
-                    .ocpp1_6()
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
                     .send_cancel_reservation(CancelReservationRequest { reservation_id: 0 })
                     .await
                     .map_err(|error| {
@@ -470,18 +324,16 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
-    #[instrument(skip_all)]
     pub async fn change_charger_availability(&mut self, available: bool) -> Result<(), Status> {
-        let protocol = self.get_protocol()?;
-
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
-                let response = self
-                    .ocpp1_6()
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
                     .send_change_availability(ChangeAvailabilityRequest {
                         connector_id: 0,
                         kind: if available {
@@ -508,19 +360,18 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
-    #[instrument(skip_all)]
     pub async fn change_evse_availability(
         &mut self,
         evse_id: &str,
         available: bool,
     ) -> Result<(), Status> {
-        let protocol = self.get_protocol()?;
-
-        let outlet = self
+        let evse = self
             .data
             .evses
             .clone()
@@ -528,12 +379,11 @@ impl Charger {
             .find(|i| i.id.to_string() == evse_id)
             .ok_or_else(|| Status::not_found("Evse not found"))?;
 
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
-                let response = self
-                    .ocpp1_6()
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
                     .send_change_availability(ChangeAvailabilityRequest {
-                        connector_id: outlet.ocpp_evse_id,
+                        connector_id: evse.ocpp_evse_id,
                         kind: if available {
                             AvailabilityType::Operative
                         } else {
@@ -558,40 +408,38 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
-    #[instrument(skip_all)]
     pub async fn change_connector_availability(
         &mut self,
-        evse_id: &str,
-        _connector_id: &str,
+        evse_id: Uuid,
+        connector_id: Uuid,
         available: bool,
     ) -> Result<(), Status> {
-        let protocol = self.get_protocol()?;
-
-        let outlet = self
+        let evse = self
             .data
             .evses
             .clone()
             .into_iter()
-            .find(|i| i.id.to_string() == evse_id)
+            .find(|i| i.id == evse_id)
             .ok_or_else(|| Status::not_found("Evse not found"))?;
 
-        let _connector = outlet
+        let _connector = evse
             .connectors
             .clone()
             .into_iter()
-            .find(|i| i.id.to_string() == evse_id)
+            .find(|i| i.id == connector_id)
             .ok_or_else(|| Status::not_found("Connector not found"))?;
 
-        match protocol {
-            OcppProtocol::Ocpp1_6 => {
-                let response = self
-                    .ocpp1_6()
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
                     .send_change_availability(ChangeAvailabilityRequest {
-                        connector_id: outlet.ocpp_evse_id,
+                        connector_id: evse.ocpp_evse_id,
                         kind: if available {
                             AvailabilityType::Operative
                         } else {
@@ -616,7 +464,9 @@ impl Charger {
                     }
                 }
             }
-            OcppProtocol::Ocpp2_0_1 => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
+            ProtocolHandle::Ocpp2_0_1(_handle) => {
+                Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
+            }
         }
     }
 
@@ -642,12 +492,112 @@ impl Charger {
         Ok(rfid_tag.is_some())
     }
 
-    #[allow(clippy::result_large_err)]
-    fn get_protocol(&self) -> Result<OcppProtocol, Status> {
-        let protocol = self.protocol.ok_or_else(|| {
-            Status::failed_precondition("The charger has not picked a ocpp protocol yet")
-        })?;
+    pub(crate) async fn get_ongoing_transaction(
+        &mut self,
+        evse_ocpp_id: u32,
+    ) -> Result<Option<Transaction>, Box<dyn std::error::Error + Send + Sync>> {
+        let evse = self.data.evse_by_ocpp_id_or_create(evse_ocpp_id);
+        self.data_store
+            .get_ongoing_transaction(&self.id, evse.id)
+            .await
+    }
 
-        Ok(protocol)
+    pub(crate) async fn end_ongoing_transaction(
+        &mut self,
+        connector_id: u32,
+        end_time: &Option<chrono::DateTime<Utc>>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        if let Some(transaction) = self.get_ongoing_transaction(connector_id).await? {
+            info!(
+                "Ending transaction {} for connector {}",
+                transaction.ocpp_transaction_id, connector_id
+            );
+            self.data_store
+                .end_transaction(
+                    &self.id,
+                    &transaction.ocpp_transaction_id,
+                    end_time.unwrap_or_else(Utc::now),
+                )
+                .await?
+        }
+
+        Ok(())
+    }
+
+    pub(crate) async fn update_ocpp_1_6_charger_configuration(
+        &mut self,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        if let Some(configuration) = &self.data.ocpp1_6configuration {
+            let target_configuration = self
+                .data
+                .settings
+                .get_ocpp_1_6_configuration_entries(&self.config);
+
+            let mut needs_reboot = false;
+            for (key, value) in target_configuration {
+                if let Some(config_value) = configuration.get_configuration(&key) {
+                    if !config_value.read_only && config_value.value != Some(value.clone()) {
+                        match self
+                            .handle
+                            .as_ocpp1_6()
+                            .unwrap()
+                            .send_change_configuration(ChangeConfigurationRequest {
+                                key: key.to_string(),
+                                value: value.to_string(),
+                            })
+                            .await?
+                        {
+                            Ok(response) => {
+                                if response.status == ConfigurationStatus::Accepted
+                                    || response.status == ConfigurationStatus::RebootRequired
+                                {
+                                    info!("Configuration {} updated to {}", key, value);
+                                    if response.status == ConfigurationStatus::RebootRequired {
+                                        needs_reboot = true;
+                                    }
+                                } else {
+                                    warn!(
+                                        "Failed to update configuration {}: {:?}",
+                                        key, response.status
+                                    );
+                                }
+                            }
+                            Err(err) => {
+                                warn!(
+                                    error_message = err.to_string(),
+                                    "Failed to change configuration"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            if needs_reboot {
+                match self
+                    .handle
+                    .as_ocpp1_6()
+                    .unwrap()
+                    .send_reset(ResetRequest {
+                        kind: ResetRequestStatus::Soft,
+                    })
+                    .await?
+                {
+                    Ok(response) => {
+                        if response.status == ResetResponseStatus::Accepted {
+                            info!("Charger rebooted successfully");
+                        } else {
+                            warn!("Failed to reboot the charger");
+                        }
+                    }
+                    Err(err) => {
+                        warn!(
+                            error_message = err.to_string(),
+                            "Failed to reboot the charger"
+                        );
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }

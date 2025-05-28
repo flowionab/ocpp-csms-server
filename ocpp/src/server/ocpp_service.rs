@@ -133,15 +133,15 @@ impl Ocpp for OcppService {
         request: Request<ChangeConnectorAvailabilityRequest>,
     ) -> Result<Response<ChangeConnectorAvailabilityResponse>, Status> {
         let payload = request.into_inner();
+        let evse_id = Uuid::parse_str(&payload.evse_id)
+            .map_err(|_| Status::invalid_argument("Invalid evse_id"))?;
+        let connector_id = Uuid::parse_str(&payload.connector_id)
+            .map_err(|_| Status::invalid_argument("Invalid connector_id"))?;
         match self.charger_pool.get(&payload.charger_id).await {
             Some(charger) => {
                 let mut lock = charger.lock().await;
-                lock.change_connector_availability(
-                    &payload.evse_id,
-                    &payload.connector_id,
-                    payload.operative,
-                )
-                .await?;
+                lock.change_connector_availability(evse_id, connector_id, payload.operative)
+                    .await?;
 
                 Ok(Response::new(ChangeConnectorAvailabilityResponse {}))
             }

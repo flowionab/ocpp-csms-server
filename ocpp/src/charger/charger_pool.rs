@@ -6,6 +6,7 @@ use std::sync::{Arc, Weak};
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::interval;
+use tracing::info;
 
 lazy_static! {
     static ref CONNECTED_CHARGERS: Gauge = register_gauge!(
@@ -32,7 +33,7 @@ impl ChargerPool {
     }
 
     async fn gc_chargers(chargers: Arc<Mutex<BTreeMap<String, Weak<Mutex<Charger>>>>>) {
-        let mut interval = interval(Duration::from_secs(15));
+        let mut interval = interval(Duration::from_secs(300));
 
         loop {
             interval.tick().await;
@@ -44,6 +45,10 @@ impl ChargerPool {
         let mut lock = chargers.lock().await;
         lock.retain(|_, weak| weak.strong_count() > 0);
         CONNECTED_CHARGERS.set(lock.len() as f64);
+        info!(
+            connected_chargers = lock.len(),
+            "currently connected chargers"
+        );
     }
 
     pub async fn insert(&self, id: &str, charger: &Arc<Mutex<Charger>>) {
@@ -54,5 +59,11 @@ impl ChargerPool {
     pub async fn get(&self, charger_id: &str) -> Option<Arc<Mutex<Charger>>> {
         let lock = self.chargers.lock().await;
         lock.get(charger_id).and_then(|i| i.upgrade())
+    }
+
+    pub async fn remove(&self, charger_id: &str) {
+        let mut lock = self.chargers.lock().await;
+        lock.remove(charger_id);
+        CONNECTED_CHARGERS.set(lock.len() as f64);
     }
 }

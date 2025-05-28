@@ -39,3 +39,4 @@ tonic-build = "0.13.0"
 
 [dev-dependencies]
 ocpp-client = { version = "0.1.16", features = ["test"] }
+mockall = "0.13.1"
