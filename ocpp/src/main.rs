@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     configure_tracing()?;
     info!("starting up csms server");
-    let config = read_config().await?;
+    let config = Arc::new(read_config().await?);
     config.print_config_warnings();
 
     let data_store = {
@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
     let charger_pool = ChargerPool::new();
 
     let charger_factory = ChargerFactory::new(
-        Arc::new(config),
+        Arc::clone(&config),
         Arc::clone(&data_store) as Arc<dyn shared::DataStore + Send + Sync>,
         &node_address,
         easee_master_password,
@@ -78,7 +78,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
         &charger_pool,
     );
 
-    let interface = OcppJsonNetworkInterface::new(charger_factory, &host, &port);
+    let interface =
+        OcppJsonNetworkInterface::new(&config, &charger_pool, charger_factory, &host, &port);
 
     try_join!(interface.start(), start_server(&charger_pool))?;
 

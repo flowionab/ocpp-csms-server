@@ -37,8 +37,6 @@ pub async fn handle_new_request<
     let password = extract_password(headers)?;
     let protocol = validate_protocol(headers)?;
 
-    info!(charger_id = id, "receiving connection from charger");
-
     if charger_pool.get(&id).await.is_some() {
         warn!(charger_id = id, "charger already connected");
         return Err(Response::builder()

@@ -10,7 +10,7 @@ use poem::web::{Data, Path};
 use poem::{handler, Response};
 use shared::Config;
 use std::sync::Arc;
-use tracing::instrument;
+use tracing::info;
 
 type DataType<'a, T> = Data<&'a (
     Arc<Config>,
@@ -18,7 +18,6 @@ type DataType<'a, T> = Data<&'a (
     Arc<dyn ChargerFactory<T> + Send + Sync>,
 )>;
 
-#[instrument(skip_all)]
 #[handler]
 pub async fn ocpp_handler<
     T: AuthenticationHandler
@@ -33,6 +32,7 @@ pub async fn ocpp_handler<
     data: DataType<'_, T>,
     Path(id): Path<String>,
 ) -> Response {
+    info!(charger_id = id, "receiving connection from charger");
     handle_new_request::<T>(&data.0 .0, &data.0 .1, ws, headers, id, &data.0 .2)
         .await
         .unwrap_or_else(|r| r)
