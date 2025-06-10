@@ -5,13 +5,13 @@ use rust_ocpp::v1_6::messages::meter_values::MeterValuesRequest;
 use rust_ocpp::v1_6::types::Measurand;
 use shared::ChargerData;
 
-pub fn handle_meter_values_request(
+pub fn update_charger_from_meter_values_request(
     data: &mut ChargerData,
-    request: MeterValuesRequest,
+    request: &MeterValuesRequest,
 ) -> Result<(), OCPP1_6Error> {
-    for meter_value in request.meter_value {
-        for sampled_value in meter_value.sampled_value {
-            match sampled_value.measurand.unwrap_or_default() {
+    for meter_value in &request.meter_value {
+        for sampled_value in &meter_value.sampled_value {
+            match sampled_value.measurand.clone().unwrap_or_default() {
                 Measurand::CurrentExport => {}
                 Measurand::CurrentImport => {
                     update_evse_ampere_from_metric_request(
@@ -19,7 +19,7 @@ pub fn handle_meter_values_request(
                         request.connector_id,
                         meter_value.timestamp,
                         &sampled_value.value,
-                        sampled_value.phase,
+                        sampled_value.phase.clone(),
                     )?;
                 }
                 Measurand::CurrentOffered => {}
@@ -47,7 +47,7 @@ pub fn handle_meter_values_request(
                         request.connector_id,
                         meter_value.timestamp,
                         &sampled_value.value,
-                        sampled_value.phase,
+                        sampled_value.phase.clone(),
                     )?;
                 }
             }
@@ -62,10 +62,10 @@ mod tests {
     use chrono::Utc;
     use rust_ocpp::v1_6::messages::meter_values::MeterValuesRequest;
     use rust_ocpp::v1_6::types::{Measurand, MeterValue, Phase, SampledValue};
-    use shared::{ChargerData, EvseData, PhaseMetric};
+    use shared::{ChargerData, Config, EvseData, PhaseMetric};
 
     fn setup_charger_with_evse(connector_id: u32) -> ChargerData {
-        let mut charger = ChargerData::default();
+        let mut charger = ChargerData::new("test", &Config::default());
         let evse = EvseData {
             id: Default::default(),
             ocpp_evse_id: connector_id,
@@ -95,7 +95,7 @@ mod tests {
                 }],
             }],
         };
-        let res = handle_meter_values_request(&mut charger, request);
+        let res = update_charger_from_meter_values_request(&mut charger, &request);
         assert!(res.is_ok());
         let evse = charger.evse_by_ocpp_id(1).unwrap();
         assert_eq!(evse.ampere_output.l1.value, 12.5);
@@ -118,7 +118,7 @@ mod tests {
                 }],
             }],
         };
-        let res = handle_meter_values_request(&mut charger, request);
+        let res = update_charger_from_meter_values_request(&mut charger, &request);
         assert!(res.is_ok());
         let evse = charger.evse_by_ocpp_id(1).unwrap();
         assert_eq!(evse.voltage.l2.value, 230.0);
@@ -142,7 +142,7 @@ mod tests {
             }],
         };
         // Should not update anything, but also not error
-        let res = handle_meter_values_request(&mut charger, request);
+        let res = update_charger_from_meter_values_request(&mut charger, &request);
         assert!(res.is_ok());
         let evse = charger.evse_by_ocpp_id(1).unwrap();
         assert_eq!(evse.ampere_output.l1.value, 0.0);
@@ -166,7 +166,7 @@ mod tests {
                 }],
             }],
         };
-        let res = handle_meter_values_request(&mut charger, request);
+        let res = update_charger_from_meter_values_request(&mut charger, &request);
         assert!(res.is_err());
     }
 }

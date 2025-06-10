@@ -350,6 +350,22 @@ impl DataStore for SqlxDataStore<Postgres> {
         .await
         .map_err(|e| e.into())
     }
+
+    async fn get_transaction_by_ocpp_id(
+        &self,
+        transaction_ocpp_id: &str,
+    ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query_as!(
+            Transaction,
+            "
+                SELECT * FROM transactions WHERE ocpp_transaction_id = $1
+            ",
+            transaction_ocpp_id
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| e.into())
+    }
 }
 
 #[derive(FromRow, Debug, Clone)]

@@ -22,3 +22,19 @@ impl From<ConnectorStatusEnumType> for ConnectorStatus {
         }
     }
 }
+
+impl From<rust_ocpp::v1_6::types::ChargePointStatus> for ConnectorStatus {
+    fn from(status: rust_ocpp::v1_6::types::ChargePointStatus) -> Self {
+        match status {
+            rust_ocpp::v1_6::types::ChargePointStatus::Available => Self::Available,
+            rust_ocpp::v1_6::types::ChargePointStatus::Preparing => Self::Occupied,
+            rust_ocpp::v1_6::types::ChargePointStatus::Charging => Self::Occupied,
+            rust_ocpp::v1_6::types::ChargePointStatus::SuspendedEVSE => Self::Occupied,
+            rust_ocpp::v1_6::types::ChargePointStatus::SuspendedEV => Self::Occupied,
+            rust_ocpp::v1_6::types::ChargePointStatus::Finishing => Self::Occupied,
+            rust_ocpp::v1_6::types::ChargePointStatus::Reserved => Self::Reserved,
+            rust_ocpp::v1_6::types::ChargePointStatus::Unavailable => Self::Unavailable,
+            rust_ocpp::v1_6::types::ChargePointStatus::Faulted => Self::Faulted,
+        }
+    }
+}

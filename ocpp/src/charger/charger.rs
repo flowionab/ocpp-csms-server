@@ -492,6 +492,15 @@ impl Charger {
             .await
     }
 
+    pub(crate) async fn transaction_by_ocpp_id(
+        &mut self,
+        transaction_ocpp_id: i32,
+    ) -> Result<Option<Transaction>, Box<dyn std::error::Error + Send + Sync>> {
+        self.data_store
+            .get_transaction_by_ocpp_id(&transaction_ocpp_id.to_string())
+            .await
+    }
+
     pub(crate) async fn end_ongoing_transaction(
         &mut self,
         connector_id: u32,

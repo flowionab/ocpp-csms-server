@@ -1,11 +1,9 @@
 use crate::event::amqp_event_handler::AmqpEventHandler;
 use crate::event::event_handler::EventHandler;
-use crate::event::ConnectorStatus;
-use chrono::{DateTime, Utc};
+use ocpp_csms_server_sdk::event::EventPayload;
 use shared::Config;
 use std::sync::Arc;
 use tracing::info;
-use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct EventManager {
@@ -35,24 +33,9 @@ impl EventManager {
         })
     }
 
-    pub async fn send_connector_status_event(
-        &self,
-        charger_id: String,
-        status: ConnectorStatus,
-        timestamp: DateTime<Utc>,
-        evse_id: Uuid,
-        connector_id: Uuid,
-    ) {
+    pub async fn send_event(&self, payload: EventPayload) {
         for handler in self.event_handlers.iter() {
-            handler
-                .send_connector_status_event(
-                    charger_id.clone(),
-                    status,
-                    timestamp,
-                    evse_id,
-                    connector_id,
-                )
-                .await;
+            handler.send_event(payload.clone()).await;
         }
     }
 }

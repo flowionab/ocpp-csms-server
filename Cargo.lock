@@ -143,7 +143,7 @@ checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 
 [[package]]
 name = "api"
-version = "0.1.40"
+version = "0.1.41"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2150,7 +2150,7 @@ dependencies = [
 
 [[package]]
 name = "ocpp"
-version = "0.1.40"
+version = "0.1.41"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2163,6 +2163,7 @@ dependencies = [
  "lazy_static",
  "mockall",
  "ocpp-client",
+ "ocpp-csms-server-sdk",
  "poem",
  "prometheus",
  "prost",
@@ -2203,11 +2204,12 @@ dependencies = [
 
 [[package]]
 name = "ocpp-csms-server-sdk"
-version = "0.1.40"
+version = "0.1.41"
 dependencies = [
  "chrono",
  "futures",
  "prost",
+ "serde",
  "tokio",
  "tonic 0.13.0",
  "tonic-build",
@@ -3347,7 +3349,7 @@ dependencies = [
 
 [[package]]
 name = "shared"
-version = "0.1.40"
+version = "0.1.41"
 dependencies = [
  "async-trait",
  "chrono",

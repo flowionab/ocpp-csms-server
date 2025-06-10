@@ -1,5 +1,5 @@
 use crate::charger::charger_model::ChargerModel;
-use crate::charger::ocpp1_6::handle_meter_values_request;
+use crate::charger::ocpp1_6::update_charger_from_meter_values_request;
 use crate::charger::Charger;
 use crate::network_interface::Ocpp16RequestReceiver;
 use crate::ocpp_csms_server_client;
@@ -8,6 +8,11 @@ use crate::ocpp_csms_server_client::authorize_response;
 use bcrypt::DEFAULT_COST;
 use chrono::{TimeZone, Utc};
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
+use ocpp_csms_server_sdk::event;
+use ocpp_csms_server_sdk::event::{
+    EventPayload, EvseInfo, TransactionEvent, TransactionEventTriggerReason, TransactionEventType,
+    TransactionInfo,
+};
 use rand::distr::Alphanumeric;
 use rand::Rng;
 use rust_ocpp::v1_6::messages::authorize::{AuthorizeRequest, AuthorizeResponse};
@@ -38,7 +43,7 @@ use rust_ocpp::v1_6::messages::stop_transaction::{
 use rust_ocpp::v1_6::messages::trigger_message::TriggerMessageRequest;
 use rust_ocpp::v1_6::types::{
     AuthorizationStatus, ChargePointStatus, ConfigurationStatus, DataTransferStatus, IdTagInfo,
-    MessageTrigger, RegistrationStatus, ResetRequestStatus, ResetResponseStatus,
+    Measurand, MessageTrigger, RegistrationStatus, ResetRequestStatus, ResetResponseStatus,
     TriggerMessageStatus,
 };
 use shared::{ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Configuration};
@@ -102,6 +107,120 @@ impl Charger {
                 status: AuthorizationStatus::Accepted,
             })
         }
+    }
+
+    pub async fn send_meter_values_event_ocpp_1_6(
+        &mut self,
+        request: &MeterValuesRequest,
+    ) -> Result<(), OCPP1_6Error> {
+        if let Some(transaction_id) = request.transaction_id {
+            if let Some(transaction) = self
+                .transaction_by_ocpp_id(transaction_id)
+                .await
+                .map_err(|e| OCPP1_6Error::new_internal(&e))?
+            {
+                let payload = EventPayload::TransactionEvent(TransactionEvent {
+                    charger_id: self.id.to_string(),
+                    timestamp: Utc::now(),
+                    event_type: TransactionEventType::Updated,
+                    trigger_reason: TransactionEventTriggerReason::MeterValuePeriodic,
+                    number_of_phases_used: None,
+                    cable_max_current: None,
+                    reservation_id: None,
+                    transaction_info: TransactionInfo {
+                        id: transaction.id,
+                        charging_state: None,
+                        time_spent_charging: None,
+                        stopped_reason: None,
+                    },
+                    evse: EvseInfo {
+                        id: transaction.evse_id,
+                        connector_id: Default::default(),
+                    },
+                    meter_values: request
+                        .meter_value
+                        .iter()
+                        .map(|mv| event::MeterValue {
+                            timestamp: mv.timestamp,
+                            sampled_value: mv
+                                .sampled_value
+                                .iter()
+                                .filter_map(|sv| match sv.measurand.clone().unwrap_or_default() {
+                                    Measurand::CurrentExport => {
+                                        Some(event::SampledValue::CurrentExport {
+                                            ampere: sv.value.parse().unwrap_or_default(),
+                                            context: (),
+                                            phase: (),
+                                            location: (),
+                                            signed_meter_value: (),
+                                        })
+                                    }
+                                    Measurand::CurrentImport => {
+                                        Some(event::SampledValue::CurrentImport)
+                                    }
+                                    Measurand::CurrentOffered => {
+                                        Some(event::SampledValue::CurrentOffered)
+                                    }
+                                    Measurand::EnergyActiveExportRegister => {
+                                        Some(event::SampledValue::EnergyActiveExportRegister)
+                                    }
+                                    Measurand::EnergyActiveImportRegister => {
+                                        Some(event::SampledValue::EnergyActiveImportRegister)
+                                    }
+                                    Measurand::EnergyReactiveExportRegister => {
+                                        Some(event::SampledValue::EnergyReactiveExportRegister)
+                                    }
+                                    Measurand::EnergyReactiveImportRegister => {
+                                        Some(event::SampledValue::EnergyReactiveImportRegister)
+                                    }
+                                    Measurand::EnergyActiveExportInterval => {
+                                        Some(event::SampledValue::EnergyActiveExportInterval)
+                                    }
+                                    Measurand::EnergyActiveImportInterval => {
+                                        Some(event::SampledValue::EnergyActiveImportInterval)
+                                    }
+                                    Measurand::EnergyReactiveExportInterval => {
+                                        Some(event::SampledValue::EnergyReactiveExportInterval)
+                                    }
+                                    Measurand::EnergyReactiveImportInterval => {
+                                        Some(event::SampledValue::EnergyReactiveImportInterval)
+                                    }
+                                    Measurand::Frequency => Some(event::SampledValue::Frequency),
+                                    Measurand::PowerActiveExport => {
+                                        Some(event::SampledValue::PowerActiveExport)
+                                    }
+                                    Measurand::PowerActiveImport => {
+                                        Some(event::SampledValue::PowerActiveImport)
+                                    }
+                                    Measurand::PowerFactor => {
+                                        Some(event::SampledValue::PowerFactor)
+                                    }
+                                    Measurand::PowerOffered => {
+                                        Some(event::SampledValue::PowerOffered)
+                                    }
+                                    Measurand::PowerReactiveExport => {
+                                        Some(event::SampledValue::PowerReactiveExport)
+                                    }
+                                    Measurand::PowerReactiveImport => {
+                                        Some(event::SampledValue::PowerReactiveImport)
+                                    }
+                                    Measurand::Rpm => None,
+                                    Measurand::SoC => Some(event::SampledValue::SoC),
+                                    Measurand::Temperature => None,
+                                    Measurand::Voltage => Some(event::SampledValue::Voltage),
+                                })
+                                .collect(),
+                        })
+                        .collect(),
+                });
+
+                self.event_manager.send_event(payload).await;
+            } else {
+                return Err(OCPP1_6Error::new_internal_str("Transaction not found"));
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -345,7 +464,7 @@ impl Ocpp16RequestReceiver for Charger {
         &mut self,
         request: MeterValuesRequest,
     ) -> Result<MeterValuesResponse, OCPP1_6Error> {
-        handle_meter_values_request(&mut self.data, request)?;
+        update_charger_from_meter_values_request(&mut self.data, &request)?;
         self.sync_data().await.map_err(|error| {
             error!(
                 error_message = error.to_string(),
@@ -353,6 +472,9 @@ impl Ocpp16RequestReceiver for Charger {
             );
             OCPP1_6Error::new_internal(&error)
         })?;
+
+        self.send_meter_values_event_ocpp_1_6(&request).await?;
+
         Ok(MeterValuesResponse {})
     }
 
@@ -405,84 +527,38 @@ impl Ocpp16RequestReceiver for Charger {
         request: StatusNotificationRequest,
     ) -> Result<StatusNotificationResponse, OCPP1_6Error> {
         if request.connector_id != 0 {
-            match request.status {
-                ChargePointStatus::Available => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Available;
-                    }
-                    self.end_ongoing_transaction(request.connector_id, &request.timestamp)
-                        .await
-                        .map_err(|e| OCPP1_6Error::new_internal(&e))?;
-                }
-                ChargePointStatus::Preparing => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Occupied;
-                    }
-
-                    let transaction_id: i32 = {
-                        let mut rng = rand::rng();
-                        rng.random::<i32>()
-                    };
-                    let evse = self.data.evse_by_ocpp_id_or_create(request.connector_id);
-
-                    self.data_store
-                        .create_transaction(
-                            &self.id,
-                            evse.id,
-                            &transaction_id.to_string(),
-                            request.timestamp.unwrap_or_else(Utc::now),
-                            false,
-                        )
-                        .await
-                        .map_err(|e| OCPP1_6Error::new_internal(&e))?;
-                }
-                ChargePointStatus::Charging => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Occupied;
-                    }
-                }
-                ChargePointStatus::SuspendedEVSE => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Occupied;
-                    }
-                }
-                ChargePointStatus::SuspendedEV => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Occupied;
-                    }
-                }
-                ChargePointStatus::Finishing => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Occupied;
-                    }
-                }
-                ChargePointStatus::Reserved => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Reserved;
-                    }
-                }
-                ChargePointStatus::Unavailable => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Unavailable;
-                    }
-                }
-                ChargePointStatus::Faulted => {
-                    if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id)
-                    {
-                        connector.status = ConnectorStatus::Faulted;
-                    }
-                }
+            if let Some(connector) = self.data.ocpp_1_6_get_connector(request.connector_id) {
+                connector.status = request.status.clone().into();
             }
+
+            if request.status == ChargePointStatus::Available {
+                self.end_ongoing_transaction(request.connector_id, &request.timestamp)
+                    .await
+                    .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+            }
+
+            if request.status == ChargePointStatus::Preparing {
+                let transaction_id: i32 = {
+                    let mut rng = rand::rng();
+                    rng.random::<i32>()
+                };
+                let evse = self.data.evse_by_ocpp_id_or_create(request.connector_id);
+
+                self.data_store
+                    .create_transaction(
+                        &self.id,
+                        evse.id,
+                        &transaction_id.to_string(),
+                        request.timestamp.unwrap_or_else(Utc::now),
+                        false,
+                    )
+                    .await
+                    .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+            }
+
             if let Some(evse) = self.data.evse_by_ocpp_id_mut(request.connector_id) {
                 let evse_id = evse.id;
+                let evse_ocpp_id = evse.ocpp_evse_id;
                 if let Some(connector) = evse.connector_by_ocpp_id_mut(1) {
                     info!(
                         "Sending connector status event for charger {}: connector {} is now {:?}",
@@ -491,19 +567,35 @@ impl Ocpp16RequestReceiver for Charger {
                     let event_manager = self.event_manager.clone();
                     let charger_id = self.id.clone();
                     let connector_id = connector.id;
-                    let status = request.status.into();
                     let timestamp = request.timestamp.unwrap_or_else(Utc::now);
-                    tokio::spawn(async move {
+                    if let Some(transaction) = self
+                        .get_ongoing_transaction(evse_ocpp_id)
+                        .await
+                        .map_err(|e| OCPP1_6Error::new_internal(&e))?
+                    {
                         event_manager
-                            .send_connector_status_event(
+                            .send_event(EventPayload::TransactionEvent(TransactionEvent {
                                 charger_id,
-                                status,
                                 timestamp,
-                                evse_id,
-                                connector_id,
-                            )
+                                event_type: TransactionEventType::Updated,
+                                trigger_reason: TransactionEventTriggerReason::ChargingStateChanged,
+                                number_of_phases_used: None,
+                                cable_max_current: None,
+                                reservation_id: None,
+                                transaction_info: TransactionInfo {
+                                    id: transaction.id,
+                                    charging_state: None,
+                                    time_spent_charging: None,
+                                    stopped_reason: None,
+                                },
+                                evse: EvseInfo {
+                                    id: evse_id,
+                                    connector_id,
+                                },
+                                meter_values: vec![],
+                            }))
                             .await
-                    });
+                    }
                 }
             }
             if let Err(err) = self.sync_data().await {

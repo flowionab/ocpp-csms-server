@@ -15,6 +15,7 @@ prost = "0.13"
 uuid = { version = "1.16.0", features = ["v4"] }
 chrono = "0.4"
 tokio = "1.44.1"
+serde = { version = "1.0.215", features = ["derive"] }
 
 [build-dependencies]
 tonic-build = "0.13"

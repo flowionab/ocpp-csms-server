@@ -4,4 +4,4 @@ mod update_evse_ampere_from_metric_request;
 mod update_evse_voltage_from_metric_request;
 mod update_metric;
 
-pub use self::handle_meter_values_request::handle_meter_values_request;
+pub use self::handle_meter_values_request::update_charger_from_meter_values_request;

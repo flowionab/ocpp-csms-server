@@ -1,12 +1,10 @@
 use crate::event::event_handler::EventHandler;
-use crate::event::payload::ConnectorStatusEvent;
-use crate::event::ConnectorStatus;
-use chrono::{DateTime, Utc};
+use lapin::types::LongString;
 use lapin::{BasicProperties, Connection, ConnectionProperties, ExchangeKind};
-use serde::Serialize;
+use ocpp_csms_server_sdk::event::EventPayload;
+use std::collections::BTreeMap;
 use std::env;
 use tracing::{error, info};
-use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct AmqpEventHandler {
@@ -52,13 +50,25 @@ impl AmqpEventHandler {
         Ok(AmqpEventHandler { connection })
     }
 
-    async fn send<T: Serialize>(
+    async fn send(
         &self,
-        payload: T,
+        payload: EventPayload,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         let raw_payload = serde_json::to_string(&payload)?;
 
         let channel = self.connection.create_channel().await?;
+
+        let mut headers = BTreeMap::new();
+        headers.insert(
+            "chargerId".into(),
+            LongString::from(payload.charger_id()).into(),
+        );
+
+        let properties = BasicProperties::default()
+            .with_content_type("application/json".into())
+            .with_content_encoding("utf-8".into())
+            .with_timestamp(payload.timestamp().timestamp() as u64)
+            .with_headers(headers.into());
 
         let confirm = channel
             .basic_publish(
@@ -66,7 +76,7 @@ impl AmqpEventHandler {
                 "",
                 Default::default(),
                 raw_payload.as_bytes(),
-                BasicProperties::default(),
+                properties,
             )
             .await?;
 
@@ -82,22 +92,7 @@ impl AmqpEventHandler {
 
 #[async_trait::async_trait]
 impl EventHandler for AmqpEventHandler {
-    async fn send_connector_status_event(
-        &self,
-        charger_id: String,
-        status: ConnectorStatus,
-        timestamp: DateTime<Utc>,
-        evse_id: Uuid,
-        connector_id: Uuid,
-    ) {
-        let payload = ConnectorStatusEvent {
-            charger_id,
-            connector_id,
-            evse_id,
-            status,
-            timestamp,
-        };
-
+    async fn send_event(&self, payload: EventPayload) {
         if let Err(error) = self.send(payload).await {
             error!(
                 error_message = error.to_string(),

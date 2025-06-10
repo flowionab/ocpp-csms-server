@@ -103,4 +103,9 @@ pub trait DataStore: Send + Sync + Debug {
         &self,
         transaction_id: Uuid,
     ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>>;
+
+    async fn get_transaction_by_ocpp_id(
+        &self,
+        transaction_ocpp_id: &str,
+    ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>>;
 }
