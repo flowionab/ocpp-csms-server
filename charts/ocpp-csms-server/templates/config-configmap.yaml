@@ -13,4 +13,4 @@ data:
     enabled = {{ .Values.ocpp.amqp.enabled }}
 
     [client]
-    enabled = {{ .Values.ocpp.client.url }}
+    url = {{ .Values.ocpp.client.url }}
