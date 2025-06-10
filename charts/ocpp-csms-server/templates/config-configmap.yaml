@@ -10,9 +10,7 @@ data:
     disable_charger_auth = false
 
     [amqp]
-    enabled = {{ .Values.ocpp.amqp.enabled }}
+    enabled = "{{ .Values.ocpp.amqp.enabled }}"
 
-{{- if .Values.ocpp.client.url }}
     [client]
-    url = {{ .Values.ocpp.client.url }}
-{{- end }}
+    url = "{{ .Values.ocpp.client.url }}"
