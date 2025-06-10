@@ -1,6 +1,7 @@
 use crate::charger::charger_model::ChargerModel;
 use crate::event::EventManager;
 use crate::network_interface::ProtocolHandle;
+use crate::ocpp_csms_server_client::csms_server_client_client::CsmsServerClientClient;
 use crate::server::map_ocpp1_6_error_to_status;
 use chrono::Utc;
 use rand::Rng;
@@ -17,6 +18,7 @@ use rust_ocpp::v1_6::types::{
 use shared::{ChargerData, Config};
 use shared::{DataStore, Transaction};
 use std::sync::Arc;
+use tonic::transport::Channel;
 use tonic::Status;
 use tracing::{error, info, warn};
 use uuid::Uuid;
@@ -41,9 +43,11 @@ pub struct Charger {
     pub easee_master_password: Option<String>,
 
     pub event_manager: EventManager,
+    pub csms_server_client: Option<CsmsServerClientClient<Channel>>,
 }
 
 impl Charger {
+    #[allow(clippy::too_many_arguments)]
     pub async fn setup(
         id: &str,
         config: Arc<Config>,
@@ -52,6 +56,7 @@ impl Charger {
         node_address: &str,
         easee_master_password: Option<String>,
         event_manager: EventManager,
+        csms_server_client: Option<CsmsServerClientClient<Channel>>,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let data = data_store.get_charger_data_by_id(id).await?;
 
@@ -68,6 +73,7 @@ impl Charger {
             node_address: node_address.to_string(),
             easee_master_password,
             event_manager,
+            csms_server_client,
         })
     }
 
@@ -474,19 +480,6 @@ impl Charger {
             };
         };
         None
-    }
-
-    pub async fn validate_rfid_tag(
-        &self,
-        tag: &str,
-    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        if tag == "central" {
-            return Ok(true);
-        }
-
-        let rfid_tag = self.data_store.get_rfid_tag_by_hex(tag).await?;
-
-        Ok(rfid_tag.is_some())
     }
 
     pub(crate) async fn get_ongoing_transaction(

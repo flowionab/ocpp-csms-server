@@ -3,7 +3,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .compile_protos(
             &[
                 "proto/api_service.proto",
-                "proto/client/client_service.proto",
+                "proto/client/csms_server_client_service.proto",
             ],
             &["proto"],
         )

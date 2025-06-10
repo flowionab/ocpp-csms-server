@@ -9,6 +9,7 @@ mod network_interface;
 use crate::charger::{ChargerFactory, ChargerPool};
 use crate::event::EventManager;
 use crate::network_interface::json::OcppJsonNetworkInterface;
+use crate::ocpp_csms_server_client::csms_server_client_client::CsmsServerClientClient;
 use crate::server::start_server;
 use shared::{configure_tracing, read_config, SqlxDataStore};
 use sqlx::postgres::PgPoolOptions;
@@ -19,6 +20,10 @@ use tracing::{error, info, warn};
 
 pub mod ocpp_csms_server {
     tonic::include_proto!("ocpp_csms_server");
+}
+
+pub mod ocpp_csms_server_client {
+    tonic::include_proto!("ocpp_csms_server.client");
 }
 
 #[tokio::main]
@@ -65,6 +70,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
         Arc::new(SqlxDataStore::setup(pool).await?)
     };
 
+    let csms_server_client = match config.client_url() {
+        None => {
+            warn!("no client_url provided, not connecting to ocpp api client");
+            None
+        }
+        Some(url) => {
+            info!(url = url, "connecting to csms server client");
+            let client = CsmsServerClientClient::connect(url.to_string())
+                .await
+                .expect("Failed to connect to OCPP API client");
+            info!(url = url, "successfully connected to ocpp api client");
+            Some(client)
+        }
+    };
+
     let event_manager = EventManager::from_config(&config).await?;
 
     let charger_pool = ChargerPool::new();
@@ -76,6 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
         easee_master_password,
         &event_manager,
         &charger_pool,
+        &csms_server_client,
     );
 
     let interface =

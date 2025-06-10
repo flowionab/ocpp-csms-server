@@ -2,8 +2,11 @@ use crate::charger::charger_model::ChargerModel;
 use crate::charger::ocpp1_6::handle_meter_values_request;
 use crate::charger::Charger;
 use crate::network_interface::Ocpp16RequestReceiver;
+use crate::ocpp_csms_server_client;
+use crate::ocpp_csms_server_client::authorize_request::Authorization;
+use crate::ocpp_csms_server_client::authorize_response;
 use bcrypt::DEFAULT_COST;
-use chrono::Utc;
+use chrono::{TimeZone, Utc};
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use rand::distr::Alphanumeric;
 use rand::Rng;
@@ -42,6 +45,65 @@ use shared::{ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Con
 use std::error::Error;
 use tracing::{error, info, warn};
 use uuid::Uuid;
+
+const CENTRAL_TAG: &str = "central";
+
+impl Charger {
+    pub async fn validate_rfid_tag_ocpp_1_6(&self, tag: &str) -> Result<IdTagInfo, OCPP1_6Error> {
+        // Always accepted tag for central management
+        if tag == CENTRAL_TAG {
+            Ok(IdTagInfo {
+                expiry_date: None,
+                parent_id_tag: None,
+                status: AuthorizationStatus::Accepted,
+            })
+        } else if self.data.settings.authorize_transactions {
+            match self.csms_server_client.clone() {
+                None => {
+                    warn!("CSMS server client is not set, cannot validate RFID tag");
+                    return Err(OCPP1_6Error::new_internal_str(
+                        "CSMS server client is not set",
+                    ));
+                }
+                Some(mut client) => {
+                    let response = client
+                        .authorize(ocpp_csms_server_client::AuthorizeRequest {
+                            additional_info: None,
+                            authorization: Some(Authorization::RfidHex(tag.to_string())),
+                        })
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                error_message = e.to_string(),
+                                "failed to authorize RFID tag"
+                            );
+                            OCPP1_6Error::new_internal(&e)
+                        })?;
+
+                    let payload = response.into_inner();
+
+                    Ok(IdTagInfo {
+                        expiry_date: payload.cache_expiration_timestamp_seconds.and_then(
+                            |timestamp| {
+                                // Utc from timestamp seconds
+                                Utc.timestamp_opt(timestamp as i64, 0).single()
+                            },
+                        ),
+                        parent_id_tag: None,
+                        status: ocpp_csms_server_client::authorize_response::AuthorizationStatus::try_from(payload.status).unwrap_or_default().into(),
+                    })
+                }
+            }
+        } else {
+            // If authorization is disabled, then we just accept all tags
+            Ok(IdTagInfo {
+                expiry_date: None,
+                parent_id_tag: None,
+                status: AuthorizationStatus::Accepted,
+            })
+        }
+    }
+}
 
 #[async_trait::async_trait]
 impl Ocpp16RequestReceiver for Charger {
@@ -208,29 +270,9 @@ impl Ocpp16RequestReceiver for Charger {
         &mut self,
         request: AuthorizeRequest,
     ) -> Result<AuthorizeResponse, OCPP1_6Error> {
-        let tag = request.id_tag;
-
-        let is_tag_valid = self.validate_rfid_tag(&tag).await.map_err(|_error| {
-            OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
-        })?;
-
-        if is_tag_valid {
-            Ok(AuthorizeResponse {
-                id_tag_info: IdTagInfo {
-                    expiry_date: None,
-                    parent_id_tag: None,
-                    status: AuthorizationStatus::Accepted,
-                },
-            })
-        } else {
-            Ok(AuthorizeResponse {
-                id_tag_info: IdTagInfo {
-                    expiry_date: None,
-                    parent_id_tag: None,
-                    status: AuthorizationStatus::Invalid,
-                },
-            })
-        }
+        Ok(AuthorizeResponse {
+            id_tag_info: self.validate_rfid_tag_ocpp_1_6(&request.id_tag).await?,
+        })
     }
 
     async fn boot_notification(
@@ -327,10 +369,6 @@ impl Ocpp16RequestReceiver for Charger {
                 OCPP1_6Error::new_internal_str("Could not get transaction from database")
             })?;
 
-        let is_tag_valid = self.validate_rfid_tag(&tag).await.map_err(|_error| {
-            OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
-        })?;
-
         if let Some(transaction) = &transaction {
             let meter_start = request.meter_start;
             self.data_store
@@ -356,25 +394,10 @@ impl Ocpp16RequestReceiver for Charger {
                 OCPP1_6Error::new_internal_str("Failed to parse transaction id")
             })?;
 
-        if is_tag_valid {
-            Ok(StartTransactionResponse {
-                id_tag_info: IdTagInfo {
-                    expiry_date: None,
-                    parent_id_tag: None,
-                    status: AuthorizationStatus::Accepted,
-                },
-                transaction_id,
-            })
-        } else {
-            Ok(StartTransactionResponse {
-                id_tag_info: IdTagInfo {
-                    expiry_date: None,
-                    parent_id_tag: None,
-                    status: AuthorizationStatus::Invalid,
-                },
-                transaction_id,
-            })
-        }
+        Ok(StartTransactionResponse {
+            id_tag_info: self.validate_rfid_tag_ocpp_1_6(&tag).await?,
+            transaction_id,
+        })
     }
 
     async fn status_notification(
@@ -516,29 +539,35 @@ impl Ocpp16RequestReceiver for Charger {
             .map_err(|e| OCPP1_6Error::new_internal(&e))?;
 
         if let Some(tag) = request.id_tag {
-            let is_tag_valid = self.validate_rfid_tag(&tag).await.map_err(|_error| {
-                OCPP1_6Error::new_internal_str("Could not validate the tag against our database")
-            })?;
-
-            if is_tag_valid {
-                Ok(StopTransactionResponse {
-                    id_tag_info: Some(IdTagInfo {
-                        expiry_date: None,
-                        parent_id_tag: None,
-                        status: AuthorizationStatus::Accepted,
-                    }),
-                })
-            } else {
-                Ok(StopTransactionResponse {
-                    id_tag_info: Some(IdTagInfo {
-                        expiry_date: None,
-                        parent_id_tag: None,
-                        status: AuthorizationStatus::Invalid,
-                    }),
-                })
-            }
+            Ok(StopTransactionResponse {
+                id_tag_info: Some(self.validate_rfid_tag_ocpp_1_6(&tag).await?),
+            })
         } else {
             Ok(StopTransactionResponse { id_tag_info: None })
+        }
+    }
+}
+
+impl From<authorize_response::AuthorizationStatus> for AuthorizationStatus {
+    fn from(status: authorize_response::AuthorizationStatus) -> Self {
+        match status {
+            authorize_response::AuthorizationStatus::Accepted => AuthorizationStatus::Accepted,
+            authorize_response::AuthorizationStatus::Blocked => AuthorizationStatus::Blocked,
+            authorize_response::AuthorizationStatus::Expired => AuthorizationStatus::Expired,
+            authorize_response::AuthorizationStatus::ConcurrentTransaction => {
+                AuthorizationStatus::ConcurrentTx
+            }
+            authorize_response::AuthorizationStatus::Invalid => AuthorizationStatus::Invalid,
+            authorize_response::AuthorizationStatus::NoCredit => AuthorizationStatus::Blocked,
+            authorize_response::AuthorizationStatus::Unspecified => AuthorizationStatus::Invalid,
+            authorize_response::AuthorizationStatus::NotAllowedOnThisTypeOfEvse => {
+                AuthorizationStatus::Blocked
+            }
+            authorize_response::AuthorizationStatus::NotAtThisLocation => {
+                AuthorizationStatus::Blocked
+            }
+            authorize_response::AuthorizationStatus::NotAtThisTime => AuthorizationStatus::Blocked,
+            authorize_response::AuthorizationStatus::Unknown => AuthorizationStatus::Invalid,
         }
     }
 }

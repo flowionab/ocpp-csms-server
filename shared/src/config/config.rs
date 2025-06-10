@@ -19,6 +19,10 @@ impl Config {
             ocpp.print_config_warnings()
         }
     }
+
+    pub fn client_url(&self) -> Option<&str> {
+        self.client.as_ref().and_then(|c| c.url.as_deref())
+    }
 }
 
 impl Default for Config {

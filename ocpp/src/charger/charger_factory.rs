@@ -1,10 +1,12 @@
 use crate::charger::{Charger, ChargerPool};
 use crate::event::EventManager;
 use crate::network_interface::ProtocolHandle;
+use crate::ocpp_csms_server_client::csms_server_client_client::CsmsServerClientClient;
 use shared::{Config, DataStore};
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tonic::transport::Channel;
 
 pub struct ChargerFactory {
     config: Arc<Config>,
@@ -13,6 +15,7 @@ pub struct ChargerFactory {
     easee_master_password: Option<String>,
     event_manager: EventManager,
     charger_pool: ChargerPool,
+    csms_server_client: Option<CsmsServerClientClient<Channel>>,
 }
 
 impl ChargerFactory {
@@ -23,6 +26,7 @@ impl ChargerFactory {
         easee_master_password: Option<String>,
         event_manager: &EventManager,
         charger_pool: &ChargerPool,
+        csms_server_client: &Option<CsmsServerClientClient<Channel>>,
     ) -> Self {
         Self {
             config,
@@ -31,6 +35,7 @@ impl ChargerFactory {
             easee_master_password,
             event_manager: event_manager.clone(),
             charger_pool: charger_pool.clone(),
+            csms_server_client: csms_server_client.clone(),
         }
     }
 }
@@ -50,6 +55,7 @@ impl crate::network_interface::ChargerFactory<Charger> for ChargerFactory {
             &self.node_address,
             self.easee_master_password.clone(),
             self.event_manager.clone(),
+            self.csms_server_client.clone(),
         )
         .await
     }
