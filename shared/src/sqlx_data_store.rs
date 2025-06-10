@@ -30,23 +30,27 @@ impl DataStore for SqlxDataStore<Postgres> {
         let row = sqlx::query!("SELECT * FROM chargers WHERE id = $1", id)
             .fetch_optional(&self.pool)
             .await?;
-        Ok(row.map(|record| ChargerData {
-            id: record.id,
-            model: record.model,
-            vendor: record.vendor,
-            serial_number: record.serial_number,
-            firmware_version: record.firmware_version,
-            iccid: record.iccid,
-            imsi: record.imsi,
-            ocpp1_6configuration: record
-                .ocpp1_6configuration
-                .map(|j| serde_json::from_str(&j).unwrap_or_default()),
-            evses: record
-                .evses
-                .map(|j| serde_json::from_str(&j).unwrap_or_default())
-                .unwrap_or_default(),
-            settings: Default::default(),
-        }))
+        Ok(row
+            .map(|record| {
+                Ok::<_, Box<dyn Error + Send + Sync>>(ChargerData {
+                    id: record.id,
+                    model: record.model,
+                    vendor: record.vendor,
+                    serial_number: record.serial_number,
+                    firmware_version: record.firmware_version,
+                    iccid: record.iccid,
+                    imsi: record.imsi,
+                    ocpp1_6configuration: record
+                        .ocpp1_6configuration
+                        .map(|j| serde_json::from_str(&j).unwrap_or_default()),
+                    evses: record
+                        .evses
+                        .map(|j| serde_json::from_str(&j).unwrap_or_default())
+                        .unwrap_or_default(),
+                    settings: serde_json::from_str(&record.settings)?,
+                })
+            })
+            .transpose()?)
     }
 
     async fn get_chargers(
@@ -63,24 +67,26 @@ impl DataStore for SqlxDataStore<Postgres> {
         .await?;
         Ok(rows
             .into_iter()
-            .map(|record| ChargerData {
-                id: record.id,
-                model: record.model,
-                vendor: record.vendor,
-                serial_number: record.serial_number,
-                firmware_version: record.firmware_version,
-                iccid: record.iccid,
-                imsi: record.imsi,
-                ocpp1_6configuration: record
-                    .ocpp1_6configuration
-                    .map(|j| serde_json::from_str(&j).unwrap_or_default()),
-                evses: record
-                    .evses
-                    .map(|j| serde_json::from_str(&j).unwrap_or_default())
-                    .unwrap_or_default(),
-                settings: Default::default(),
+            .map(|record| {
+                Ok::<_, Box<dyn Error + Send + Sync>>(ChargerData {
+                    id: record.id,
+                    model: record.model,
+                    vendor: record.vendor,
+                    serial_number: record.serial_number,
+                    firmware_version: record.firmware_version,
+                    iccid: record.iccid,
+                    imsi: record.imsi,
+                    ocpp1_6configuration: record
+                        .ocpp1_6configuration
+                        .map(|j| serde_json::from_str(&j).unwrap_or_default()),
+                    evses: record
+                        .evses
+                        .map(|j| serde_json::from_str(&j).unwrap_or_default())
+                        .unwrap_or_default(),
+                    settings: serde_json::from_str(&record.settings)?,
+                })
             })
-            .collect())
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     async fn count_chargers(&self) -> Result<i64, Box<dyn Error + Send + Sync + 'static>> {

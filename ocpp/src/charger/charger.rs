@@ -63,10 +63,7 @@ impl Charger {
             handle,
             authenticated,
             config: config.clone(),
-            data: data.unwrap_or_else(|| ChargerData {
-                id: id.to_string(),
-                ..Default::default()
-            }),
+            data: data.unwrap_or_else(|| ChargerData::new(id, &config)),
             password: None,
             node_address: node_address.to_string(),
             easee_master_password,

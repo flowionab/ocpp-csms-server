@@ -9,16 +9,28 @@ use rust_ocpp::v1_6::messages::change_configuration::{
     TRANSACTION_MESSAGE_RETRY_INTERVAL, UNLOCK_CONNECTOR_ON_EV_SIDE_DISCONNECT,
     WEB_SOCKET_PING_INTERVAL,
 };
-use sqlx::FromRow;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChargerSettings {
     pub authorize_transactions: bool,
     pub permanently_lock_cable_to_charger: bool,
 }
 
 impl ChargerSettings {
+    pub fn new(config: &Config) -> Self {
+        Self {
+            authorize_transactions: config
+                .authorize
+                .clone()
+                .unwrap_or_default()
+                .default_authorize_transactions
+                .unwrap_or_default(),
+            permanently_lock_cable_to_charger: false,
+        }
+    }
+
     pub fn get_ocpp_1_6_configuration_entries(&self, config: &Config) -> BTreeMap<String, String> {
         let mut entries = BTreeMap::new();
         entries.insert(
@@ -83,14 +95,5 @@ impl ChargerSettings {
         );
 
         entries
-    }
-}
-
-impl Default for ChargerSettings {
-    fn default() -> Self {
-        Self {
-            authorize_transactions: true,
-            permanently_lock_cable_to_charger: false,
-        }
     }
 }

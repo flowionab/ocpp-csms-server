@@ -1,4 +1,6 @@
 use crate::config::amqp_config::AmqpConfig;
+use crate::config::authorize_config::AuthorizeConfig;
+use crate::config::client_config::ClientConfig;
 use crate::config::ocpp_config::OcppConfig;
 use serde::{Deserialize, Serialize};
 
@@ -7,6 +9,8 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub ocpp: Option<OcppConfig>,
     pub amqp: Option<AmqpConfig>,
+    pub authorize: Option<AuthorizeConfig>,
+    pub client: Option<ClientConfig>,
 }
 
 impl Config {
@@ -22,6 +26,8 @@ impl Default for Config {
         Self {
             ocpp: Some(OcppConfig::default()),
             amqp: None,
+            authorize: None,
+            client: None,
         }
     }
 }

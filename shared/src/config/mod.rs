@@ -1,4 +1,6 @@
 mod amqp_config;
+mod authorize_config;
+mod client_config;
 mod config;
 mod ocpp_config;
 mod read_config;

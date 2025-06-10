@@ -1,10 +1,10 @@
 use crate::charger_settings::ChargerSettings;
 use crate::evse_data::EvseData;
-use crate::{ConnectorData, Ocpp1_6Configuration};
+use crate::{Config, ConnectorData, Ocpp1_6Configuration};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Default, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct ChargerData {
     pub id: String,
     pub model: Option<String>,
@@ -21,6 +21,23 @@ pub struct ChargerData {
 }
 
 impl ChargerData {
+    pub fn new(id: &str, config: &Config) -> Self {
+        Self {
+            id: id.to_string(),
+            model: None,
+            vendor: None,
+            serial_number: None,
+            firmware_version: None,
+            iccid: None,
+            imsi: None,
+            evses: vec![
+                EvseData::new(1), // Default EVSE with ID 1
+            ],
+            settings: ChargerSettings::new(config),
+            ocpp1_6configuration: None,
+        }
+    }
+
     pub fn evse_by_ocpp_id_or_create(&mut self, ocpp_id: u32) -> &mut EvseData {
         if self.evse_by_ocpp_id(ocpp_id).is_some() {
             self.evse_by_ocpp_id_mut(ocpp_id).unwrap()

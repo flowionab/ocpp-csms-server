@@ -60,7 +60,7 @@ impl AmqpEventHandler {
 
         let channel = self.connection.create_channel().await?;
 
-        channel
+        let confirm = channel
             .basic_publish(
                 EVENT_EXCHANGE_NAME,
                 "",
@@ -69,6 +69,9 @@ impl AmqpEventHandler {
                 BasicProperties::default(),
             )
             .await?;
+
+        confirm.await?;
+
         info!(payload = raw_payload, "sent event to AMQP exchange");
 
         channel.close(0, "").await?;

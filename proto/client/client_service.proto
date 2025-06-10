@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+service Client {
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse) {}
+}
+
+message AuthorizeRequest {
+  oneof authorization {
+    string rfid_hex = 1;
+    string key_code = 2;
+    EMaidAuthorization emaid = 3;
+  }
+  optional string additional_info = 4;
+
+  message EMaidAuthorization {
+    string emaid = 1;
+    string certificate = 2;
+    // TODO: Add hashes
+  }
+}
+
+message AuthorizeResponse {
+  AuthorizationStatus status = 1;
+  uint32 cache_expiration_timestamp_seconds = 2; // Unix timestamp in seconds
+  string evse_id = 3; // Optional, if the authorization is for a specific EVSE
+
+  enum AuthorizationStatus {
+    AUTHORIZATION_STATUS_UNSPECIFIED = 0;
+    AUTHORIZATION_STATUS_ACCEPTED = 1;
+    AUTHORIZATION_STATUS_BLOCKED = 2;
+    AUTHORIZATION_STATUS_CONCURRENT_TRANSACTION = 3;
+    AUTHORIZATION_STATUS_EXPIRED = 4;
+    AUTHORIZATION_STATUS_INVALID = 5;
+    AUTHORIZATION_STATUS_NO_CREDIT = 6;
+    AUTHORIZATION_STATUS_NOT_ALLOWED_ON_THIS_TYPE_OF_EVSE = 7;
+    AUTHORIZATION_STATUS_NOT_AT_THIS_LOCATION = 8;
+    AUTHORIZATION_STATUS_NOT_AT_THIS_TIME = 9;
+    AUTHORIZATION_STATUS_UNKNOWN = 10;
+  }
+}
