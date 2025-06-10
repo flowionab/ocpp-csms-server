@@ -48,6 +48,8 @@ spec:
           env:
             - name: "HOST"
               value: "0.0.0.0"
+            - name: "JSON"
+              value: "1"
             - name: "OCPP_PORT"
               value: "{{ .Values.ocpp.service.ocppPort }}"
             - name: "API_PORT"
