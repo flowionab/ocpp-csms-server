@@ -14,7 +14,9 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChargerSettings {
+    #[serde(default = "true")]
     pub authorize_transactions: bool,
+    #[serde(default = "false")]
     pub permanently_lock_cable_to_charger: bool,
 }
 
