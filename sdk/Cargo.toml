@@ -13,7 +13,7 @@ futures = "0.3"
 tonic = "0.13"
 prost = "0.13"
 uuid = { version = "1.16.0", features = ["v4", "serde"] }
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 tokio = "1.44.1"
 serde = { version = "1.0.215", features = ["derive"] }
 
