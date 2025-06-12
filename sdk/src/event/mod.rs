@@ -8,6 +8,8 @@ mod transaction_event;
 mod transaction_event_trigger_reason;
 mod transaction_event_type;
 mod transaction_info;
+mod transaction_started_event;
+mod transaction_stopped_event;
 
 pub use charging_state::ChargingState;
 pub use event_payload::EventPayload;
@@ -19,3 +21,5 @@ pub use transaction_event::TransactionEvent;
 pub use transaction_event_trigger_reason::TransactionEventTriggerReason;
 pub use transaction_event_type::TransactionEventType;
 pub use transaction_info::TransactionInfo;
+pub use transaction_started_event::TransactionStartedEvent;
+pub use transaction_stopped_event::TransactionStoppedEvent;

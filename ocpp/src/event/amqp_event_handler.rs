@@ -4,7 +4,7 @@ use lapin::{BasicProperties, Connection, ConnectionProperties, ExchangeKind};
 use ocpp_csms_server_sdk::event::EventPayload;
 use std::collections::BTreeMap;
 use std::env;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 #[derive(Debug)]
 pub struct AmqpEventHandler {
@@ -82,7 +82,7 @@ impl AmqpEventHandler {
 
         confirm.await?;
 
-        info!(payload = raw_payload, "sent event to AMQP exchange");
+        debug!(payload = raw_payload, "sent event to AMQP exchange");
 
         channel.close(0, "").await?;
 

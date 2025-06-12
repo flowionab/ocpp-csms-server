@@ -78,7 +78,7 @@ pub trait DataStore: Send + Sync + Debug {
         charger_id: &str,
         ocpp_transaction_id: &str,
         end_time: chrono::DateTime<chrono::Utc>,
-    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
+    ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>>;
 
     async fn update_transaction_watt_charged(
         &self,

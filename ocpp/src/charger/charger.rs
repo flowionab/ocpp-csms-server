@@ -517,7 +517,7 @@ impl Charger {
                     &transaction.ocpp_transaction_id,
                     end_time.unwrap_or_else(Utc::now),
                 )
-                .await?
+                .await?;
         }
 
         Ok(())

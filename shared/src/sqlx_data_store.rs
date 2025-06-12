@@ -268,18 +268,23 @@ impl DataStore for SqlxDataStore<Postgres> {
         charger_id: &str,
         ocpp_transaction_id: &str,
         end_time: DateTime<Utc>,
-    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-        sqlx::query!(
+    ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>> {
+        let transaction = sqlx::query_as!(
+            Transaction,
             "
-                UPDATE transactions SET end_time = $1 WHERE charger_id = $2 AND ocpp_transaction_id = $3
+                UPDATE transactions
+                SET end_time = $1
+                WHERE charger_id = $2 AND ocpp_transaction_id = $3
+                RETURNING *
             ",
             end_time,
             charger_id,
             ocpp_transaction_id
         )
-        .execute(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
-        Ok(())
+
+        Ok(transaction)
     }
 
     async fn update_transaction_watt_charged(

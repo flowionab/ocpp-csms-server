@@ -1,17 +1,17 @@
 use crate::charger::charger_model::ChargerModel;
-use crate::charger::ocpp1_6::update_charger_from_meter_values_request;
+use crate::charger::ocpp1_6::{create_transaction_id, update_charger_from_meter_values_request};
 use crate::charger::Charger;
 use crate::network_interface::Ocpp16RequestReceiver;
 use crate::ocpp_csms_server_client;
 use crate::ocpp_csms_server_client::authorize_request::Authorization;
 use crate::ocpp_csms_server_client::authorize_response;
 use bcrypt::DEFAULT_COST;
-use chrono::{TimeZone, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use ocpp_csms_server_sdk::event;
 use ocpp_csms_server_sdk::event::{
     EventPayload, EvseInfo, TransactionEvent, TransactionEventTriggerReason, TransactionEventType,
-    TransactionInfo,
+    TransactionInfo, TransactionStartedEvent, TransactionStoppedEvent,
 };
 use rand::distr::Alphanumeric;
 use rand::Rng;
@@ -57,6 +57,11 @@ impl Charger {
     pub async fn validate_rfid_tag_ocpp_1_6(&self, tag: &str) -> Result<IdTagInfo, OCPP1_6Error> {
         // Always accepted tag for central management
         if tag == CENTRAL_TAG {
+            info!(
+                charger_id = self.id,
+                rfid_uid_hex = tag,
+                "Central management tag accepted"
+            );
             Ok(IdTagInfo {
                 expiry_date: None,
                 parent_id_tag: None,
@@ -65,7 +70,10 @@ impl Charger {
         } else if self.data.settings.authorize_transactions {
             match self.csms_server_client.clone() {
                 None => {
-                    warn!("CSMS server client is not set, cannot validate RFID tag");
+                    warn!(
+                        charger_id = self.id,
+                        "CSMS server client is not set, cannot validate RFID tag"
+                    );
                     return Err(OCPP1_6Error::new_internal_str(
                         "CSMS server client is not set",
                     ));
@@ -78,8 +86,10 @@ impl Charger {
                         })
                         .await
                         .map_err(|e| {
-                            error!(
+                            warn!(
+                                charger_id = self.id,
                                 error_message = e.to_string(),
+                                rfid_uid_hex = tag,
                                 "failed to authorize RFID tag"
                             );
                             OCPP1_6Error::new_internal(&e)
@@ -87,20 +97,43 @@ impl Charger {
 
                     let payload = response.into_inner();
 
-                    Ok(IdTagInfo {
-                        expiry_date: payload.cache_expiration_timestamp_seconds.and_then(
-                            |timestamp| {
+                    let expiry_date =
+                        payload
+                            .cache_expiration_timestamp_seconds
+                            .and_then(|timestamp| {
                                 // Utc from timestamp seconds
                                 Utc.timestamp_opt(timestamp as i64, 0).single()
-                            },
-                        ),
+                            });
+
+                    let status =
+                        ocpp_csms_server_client::authorize_response::AuthorizationStatus::try_from(
+                            payload.status,
+                        )
+                        .unwrap_or_default()
+                        .into();
+
+                    info!(
+                        charger_id = self.id,
+                        rfid_uid_hex = tag,
+                        status = ?status,
+                        expiry_date = ?expiry_date,
+                        "RFID tag authorization response received"
+                    );
+
+                    Ok(IdTagInfo {
+                        expiry_date,
                         parent_id_tag: None,
-                        status: ocpp_csms_server_client::authorize_response::AuthorizationStatus::try_from(payload.status).unwrap_or_default().into(),
+                        status,
                     })
                 }
             }
         } else {
             // If authorization is disabled, then we just accept all tags
+            info!(
+                charger_id = self.id,
+                rfid_uid_hex = tag,
+                "Authorization is disabled, accepting RFID tag"
+            );
             Ok(IdTagInfo {
                 expiry_date: None,
                 parent_id_tag: None,
@@ -219,6 +252,74 @@ impl Charger {
                 return Err(OCPP1_6Error::new_internal_str("Transaction not found"));
             }
         }
+
+        Ok(())
+    }
+
+    pub async fn start_transaction_ocpp_1_6(
+        &mut self,
+        transaction_started_at: Option<DateTime<Utc>>,
+        ocpp_evse_id: u32,
+    ) -> Result<(), OCPP1_6Error> {
+        let transaction_id = create_transaction_id();
+        let evse = self.data.evse_by_ocpp_id_or_create(ocpp_evse_id);
+        let connector = evse.connector_by_ocpp_id(1).ok_or_else(|| {
+            OCPP1_6Error::new_internal_str("Connector with ID 1 not found for EVSE")
+        })?;
+        let transaction_started_at = transaction_started_at.unwrap_or_else(Utc::now);
+
+        let transaction = self
+            .data_store
+            .create_transaction(
+                &self.id,
+                evse.id,
+                &transaction_id.to_string(),
+                transaction_started_at,
+                false,
+            )
+            .await
+            .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+
+        self.event_manager
+            .send_event(EventPayload::TransactionStartedEvent(
+                TransactionStartedEvent {
+                    charger_id: self.id.to_string(),
+                    evse_id: evse.id,
+                    connector_id: connector.id,
+                    transaction_id: transaction.id,
+                    authenticated: !self.data.settings.authorize_transactions,
+                    started_at: transaction_started_at,
+                },
+            ))
+            .await;
+
+        Ok(())
+    }
+
+    pub async fn stop_transaction_ocpp_1_6(
+        &self,
+        ocpp_transaction_id: i32,
+        stopped_at: DateTime<Utc>,
+    ) -> Result<(), OCPP1_6Error> {
+        let transaction = self
+            .data_store
+            .end_transaction(&self.id, &ocpp_transaction_id.to_string(), stopped_at)
+            .await
+            .map_err(|e| OCPP1_6Error::new_internal(&e))?
+            .ok_or_else(|| OCPP1_6Error::new_internal_str("Transaction not found"))?;
+
+        self.event_manager
+            .send_event(EventPayload::TransactionStoppedEvent(
+                TransactionStoppedEvent {
+                    charger_id: self.id.to_string(),
+                    evse_id: transaction.evse_id,
+                    connector_id: Default::default(),
+                    transaction_id: transaction.id,
+                    started_at: transaction.start_time,
+                    stopped_at,
+                },
+            ))
+            .await;
 
         Ok(())
     }
@@ -538,32 +639,14 @@ impl Ocpp16RequestReceiver for Charger {
             }
 
             if request.status == ChargePointStatus::Preparing {
-                let transaction_id: i32 = {
-                    let mut rng = rand::rng();
-                    rng.random::<i32>()
-                };
-                let evse = self.data.evse_by_ocpp_id_or_create(request.connector_id);
-
-                self.data_store
-                    .create_transaction(
-                        &self.id,
-                        evse.id,
-                        &transaction_id.to_string(),
-                        request.timestamp.unwrap_or_else(Utc::now),
-                        false,
-                    )
-                    .await
-                    .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+                self.start_transaction_ocpp_1_6(request.timestamp, request.connector_id)
+                    .await?;
             }
 
             if let Some(evse) = self.data.evse_by_ocpp_id_mut(request.connector_id) {
                 let evse_id = evse.id;
                 let evse_ocpp_id = evse.ocpp_evse_id;
                 if let Some(connector) = evse.connector_by_ocpp_id_mut(1) {
-                    info!(
-                        "Sending connector status event for charger {}: connector {} is now {:?}",
-                        self.id, connector.ocpp_id, request.status
-                    );
                     let event_manager = self.event_manager.clone();
                     let charger_id = self.id.clone();
                     let connector_id = connector.id;
@@ -621,14 +704,8 @@ impl Ocpp16RequestReceiver for Charger {
             .await
             .map_err(|e| OCPP1_6Error::new_internal(&e))?;
 
-        self.data_store
-            .end_transaction(
-                &self.id,
-                &request.transaction_id.to_string(),
-                request.timestamp,
-            )
-            .await
-            .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+        self.stop_transaction_ocpp_1_6(request.transaction_id, request.timestamp)
+            .await?;
 
         if let Some(tag) = request.id_tag {
             Ok(StopTransactionResponse {
