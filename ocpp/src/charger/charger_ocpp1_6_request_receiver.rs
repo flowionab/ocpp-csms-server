@@ -323,6 +323,31 @@ impl Charger {
 
         Ok(())
     }
+
+    pub async fn end_ongoing_transaction_ocpp_1_6(
+        &mut self,
+        evse_ocpp_id: u32,
+        end_time: Option<DateTime<Utc>>,
+    ) -> Result<(), OCPP1_6Error> {
+        if let Some(transaction) = self
+            .get_ongoing_transaction(evse_ocpp_id)
+            .await
+            .map_err(|e| OCPP1_6Error::new_internal(&e))?
+        {
+            self.stop_transaction_ocpp_1_6(
+                transaction.ocpp_transaction_id.parse().unwrap_or(0),
+                end_time.unwrap_or(Utc::now()),
+            )
+            .await?;
+        } else {
+            warn!(
+                charger_id = self.id,
+                evse_ocpp_id, "no ongoing transaction found for EVSE with OCPP ID"
+            );
+        }
+
+        Ok(())
+    }
 }
 
 #[async_trait::async_trait]
@@ -636,6 +661,14 @@ impl Ocpp16RequestReceiver for Charger {
                 self.end_ongoing_transaction(request.connector_id, &request.timestamp)
                     .await
                     .map_err(|e| OCPP1_6Error::new_internal(&e))?;
+
+                self.end_ongoing_transaction_ocpp_1_6(request.connector_id, request.timestamp)
+                    .await?;
+            }
+
+            if request.status == ChargePointStatus::Faulted {
+                self.end_ongoing_transaction_ocpp_1_6(request.connector_id, request.timestamp)
+                    .await?;
             }
 
             if request.status == ChargePointStatus::Preparing {
@@ -703,9 +736,6 @@ impl Ocpp16RequestReceiver for Charger {
             )
             .await
             .map_err(|e| OCPP1_6Error::new_internal(&e))?;
-
-        self.stop_transaction_ocpp_1_6(request.transaction_id, request.timestamp)
-            .await?;
 
         if let Some(tag) = request.id_tag {
             Ok(StopTransactionResponse {

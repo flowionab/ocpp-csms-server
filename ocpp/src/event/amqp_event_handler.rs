@@ -1,4 +1,5 @@
 use crate::event::event_handler::EventHandler;
+use lapin::options::ExchangeDeclareOptions;
 use lapin::types::LongString;
 use lapin::{BasicProperties, Connection, ConnectionProperties, ExchangeKind};
 use ocpp_csms_server_sdk::event::EventPayload;
@@ -38,7 +39,13 @@ impl AmqpEventHandler {
             .exchange_declare(
                 EVENT_EXCHANGE_NAME,
                 ExchangeKind::Fanout,
-                Default::default(),
+                ExchangeDeclareOptions {
+                    passive: false,
+                    durable: true,
+                    auto_delete: false,
+                    internal: false,
+                    nowait: false,
+                },
                 Default::default(),
             )
             .await?;
