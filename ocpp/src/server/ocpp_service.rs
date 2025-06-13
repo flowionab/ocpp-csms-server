@@ -225,9 +225,7 @@ impl Ocpp for OcppService {
                     })?;
 
                 Ok(Response::new(CreateRfidScanSessionResponse {
-                    session_id: session.id.to_string(),
-                    status: RfidScanSessionStatus::Active as i32,
-                    expires_at: session.expires_at.timestamp_millis() as u64,
+                    session: Some(session.into()),
                 }))
             }
             None => Err(Status::not_found(
@@ -247,6 +245,26 @@ impl From<shared::Transaction> for crate::ocpp_csms_server::Transaction {
             end_time: value.end_time.map(|i| i.timestamp_millis()),
             watt_charged: value.watt_charged,
             is_authorized: value.is_authorized,
+        }
+    }
+}
+
+impl From<shared::RfidScanSession> for crate::ocpp_csms_server::RfidScanSession {
+    fn from(session: shared::RfidScanSession) -> Self {
+        let status = if session.tag_scanned_at.is_some() {
+            RfidScanSessionStatus::Completed
+        } else if session.expires_at > chrono::Utc::now() {
+            RfidScanSessionStatus::Active
+        } else {
+            RfidScanSessionStatus::Failed
+        };
+        Self {
+            id: session.id.to_string(),
+            charger_id: session.charger_id,
+            rfid_uid_hex: session.rfid_uid_hex,
+            expires_at: session.expires_at.timestamp_millis() as u64,
+            status: status.into(),
+            created_at: session.created_at.timestamp_millis() as u64,
         }
     }
 }

@@ -319,22 +319,30 @@ impl Api for ApiService {
             })?;
 
         match session_opt {
-            Some(session) => {
-                let status = if session.tag_scanned_at.is_some() {
-                    RfidScanSessionStatus::Completed
-                } else if session.expires_at > chrono::Utc::now() {
-                    RfidScanSessionStatus::Active
-                } else {
-                    RfidScanSessionStatus::Failed
-                };
-
-                Ok(Response::new(GetRfidScanSessionResponse {
-                    status: status as i32,
-                    expires_at: session.expires_at.timestamp_millis() as u64,
-                    rfid_uid_hex: session.rfid_uid_hex,
-                }))
-            }
+            Some(session) => Ok(Response::new(GetRfidScanSessionResponse {
+                session: Some(session.into()),
+            })),
             None => Err(Status::not_found("RFID scan session not found")),
+        }
+    }
+}
+
+impl From<shared::RfidScanSession> for crate::ocpp_csms_server::RfidScanSession {
+    fn from(session: shared::RfidScanSession) -> Self {
+        let status = if session.tag_scanned_at.is_some() {
+            RfidScanSessionStatus::Completed
+        } else if session.expires_at > chrono::Utc::now() {
+            RfidScanSessionStatus::Active
+        } else {
+            RfidScanSessionStatus::Failed
+        };
+        Self {
+            id: session.id.to_string(),
+            charger_id: session.charger_id,
+            rfid_uid_hex: session.rfid_uid_hex,
+            expires_at: session.expires_at.timestamp_millis() as u64,
+            status: status.into(),
+            created_at: session.created_at.timestamp_millis() as u64,
         }
     }
 }

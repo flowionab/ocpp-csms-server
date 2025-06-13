@@ -36,9 +36,7 @@ message GetRfidScanSessionRequest {
 }
 
 message GetRfidScanSessionResponse {
-  RfidScanSessionStatus status = 1;
-  uint64 expires_at = 2;
-  optional string rfid_uid_hex = 3;
+  RfidScanSession session = 1;
 }
 
 message GetOngoingTransactionRequest {

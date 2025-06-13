@@ -1,5 +1,5 @@
 use crate::ocpp_csms_server;
-use crate::types::{Charger, ChargerSummary, RebootType, Transaction};
+use crate::types::{Charger, ChargerSummary, RebootType, RfidScanSession, Transaction};
 pub use ocpp_csms_server::api_client::ApiClient;
 use tonic::transport::Channel;
 use uuid::Uuid;
@@ -212,6 +212,46 @@ impl OcppApiClient {
             .into_inner()
             .transaction
             .map(Transaction::try_from)
+            .transpose()
+    }
+
+    pub async fn create_rfid_scan_session(
+        &self,
+        charger_id: &str,
+    ) -> Result<RfidScanSession, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let mut client = self.client.clone();
+        let request = ocpp_csms_server::CreateRfidScanSessionRequest {
+            charger_id: charger_id.to_string(),
+        };
+
+        let response = client.create_rfid_scan_session(request).await?;
+
+        response
+            .into_inner()
+            .session
+            .map(RfidScanSession::try_from)
+            .ok_or_else(|| {
+                Box::<dyn std::error::Error + Send + Sync + 'static>::from(
+                    "Missing RfidScanSession",
+                )
+            })?
+    }
+
+    pub async fn get_rfid_scan_session(
+        &self,
+        session_id: Uuid,
+    ) -> Result<Option<RfidScanSession>, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let mut client = self.client.clone();
+        let request = ocpp_csms_server::GetRfidScanSessionRequest {
+            session_id: session_id.to_string(),
+        };
+
+        let response = client.get_rfid_scan_session(request).await?;
+
+        response
+            .into_inner()
+            .session
+            .map(RfidScanSession::try_from)
             .transpose()
     }
 }

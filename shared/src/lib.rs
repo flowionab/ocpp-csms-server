@@ -31,5 +31,6 @@ pub use self::metric::Metric;
 pub use self::ocpp1_6_configuration::Ocpp1_6Configuration;
 pub use self::ocpp1_6_configuration::Ocpp1_6ConfigurationValue;
 pub use self::phase_metric::PhaseMetric;
+pub use self::rfid_scan_session::RfidScanSession;
 pub use self::sqlx_data_store::SqlxDataStore;
 pub use self::transaction::Transaction;

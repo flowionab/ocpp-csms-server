@@ -7,9 +7,7 @@ message CreateRfidScanSessionRequest {
 }
 
 message CreateRfidScanSessionResponse {
-  string session_id = 1;
-  RfidScanSessionStatus status = 2;
-  uint64 expires_at = 3;
+  RfidScanSession session = 1;
 }
 
 enum RfidScanSessionStatus {
@@ -17,4 +15,13 @@ enum RfidScanSessionStatus {
   RFID_SCAN_SESSION_STATUS_ACTIVE = 1;
   RFID_SCAN_SESSION_STATUS_COMPLETED = 2;
   RFID_SCAN_SESSION_STATUS_FAILED = 3;
+}
+
+message RfidScanSession {
+  string id = 1;
+  RfidScanSessionStatus status = 2;
+  uint64 created_at = 3; // Unix timestamp in milliseconds
+  uint64 expires_at = 4; // Unix timestamp in milliseconds
+  string charger_id = 5;
+  optional string rfid_uid_hex = 6;
 }

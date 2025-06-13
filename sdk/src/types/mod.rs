@@ -5,6 +5,8 @@ mod connector_status;
 mod connector_type;
 mod evse;
 mod reboot_type;
+mod rfid_scan_session;
+mod rfid_scan_session_status;
 mod transaction;
 
 pub use self::charger::Charger;
@@ -14,4 +16,5 @@ pub use self::connector_status::ConnectorStatus;
 pub use self::connector_type::ConnectorType;
 pub use self::evse::Evse;
 pub use self::reboot_type::RebootType;
+pub use self::rfid_scan_session::RfidScanSession;
 pub use self::transaction::Transaction;
