@@ -1,4 +1,4 @@
-use crate::ocpp_csms_server::RfidScanSessionStatus;
+use crate::types::rfid_scan_session_status::RfidScanSessionStatus;
 use chrono::{DateTime, TimeZone, Utc};
 use uuid::Uuid;
 
@@ -18,7 +18,8 @@ impl TryFrom<crate::ocpp_csms_server::RfidScanSession> for RfidScanSession {
             id: Uuid::parse_str(&session.id)?,
             charger_id: session.charger_id,
             rfid_uid_hex: session.rfid_uid_hex,
-            status: crate::ocpp_csms_server::RfidScanSessionStatus::try_from(session.status)?,
+            status: crate::ocpp_csms_server::RfidScanSessionStatus::try_from(session.status)?
+                .into(),
             expires_at: Utc
                 .timestamp_millis_opt(session.expires_at as i64)
                 .single()
