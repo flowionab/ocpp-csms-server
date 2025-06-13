@@ -19,6 +19,7 @@ use rust_ocpp::v1_6::messages::authorize::{AuthorizeRequest, AuthorizeResponse};
 use rust_ocpp::v1_6::messages::boot_notification::{
     BootNotificationRequest, BootNotificationResponse,
 };
+use rust_ocpp::v1_6::messages::cancel_reservation::CancelReservationRequest;
 use rust_ocpp::v1_6::messages::change_configuration::ChangeConfigurationRequest;
 use rust_ocpp::v1_6::messages::data_transfer::{DataTransferRequest, DataTransferResponse};
 use rust_ocpp::v1_6::messages::diagnostics_status_notification::{
@@ -51,7 +52,7 @@ use std::error::Error;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
-const CENTRAL_TAG: &str = "central";
+pub const CENTRAL_TAG: &str = "central";
 
 impl Charger {
     pub async fn validate_rfid_tag_ocpp_1_6(&self, tag: &str) -> Result<IdTagInfo, OCPP1_6Error> {
@@ -66,6 +67,49 @@ impl Charger {
                 expiry_date: None,
                 parent_id_tag: None,
                 status: AuthorizationStatus::Accepted,
+            })
+        } else if let Some(session) = self
+            .data_store
+            .get_ongoing_rfid_scanning_session(&self.id)
+            .await
+            .map_err(|error| {
+                warn!(
+                    error_message = error.to_string(),
+                    "failed to get ongoing RFID scanning session"
+                );
+                OCPP1_6Error::new_internal(&error)
+            })?
+        {
+            self.handle
+                .as_ocpp1_6()
+                .unwrap()
+                .send_cancel_reservation(CancelReservationRequest {
+                    reservation_id: session.ocpp_reservation_id,
+                })
+                .await
+                .map_err(|error| {
+                    warn!(
+                        error_message = error.to_string(),
+                        "failed to cancel reservation for RFID scan session"
+                    );
+                    OCPP1_6Error::new_internal(&error)
+                })??;
+
+            self.data_store
+                .save_scanned_tag_to_rfid_scan_session(session.id, tag)
+                .await
+                .map_err(|error| {
+                    warn!(
+                        error_message = error.to_string(),
+                        "failed to save scanned tag to RFID scan session"
+                    );
+                    OCPP1_6Error::new_internal(&error)
+                })?;
+
+            Ok(IdTagInfo {
+                expiry_date: None,
+                parent_id_tag: None,
+                status: AuthorizationStatus::Invalid,
             })
         } else if self.data.settings.authorize_transactions {
             match self.csms_server_client.clone() {

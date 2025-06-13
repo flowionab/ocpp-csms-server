@@ -1,6 +1,8 @@
 use crate::charger_data::ChargerData;
+use crate::rfid_scan_session::RfidScanSession;
 use crate::transaction::Transaction;
 use crate::ChargerConnectionInfo;
+use chrono::{DateTime, Utc};
 use std::error::Error;
 use std::fmt::Debug;
 use uuid::Uuid;
@@ -108,4 +110,26 @@ pub trait DataStore: Send + Sync + Debug {
         &self,
         transaction_ocpp_id: &str,
     ) -> Result<Option<Transaction>, Box<dyn Error + Send + Sync + 'static>>;
+
+    async fn create_rfid_scan_session(
+        &self,
+        charger_id: &str,
+        expires_at: DateTime<Utc>,
+    ) -> Result<RfidScanSession, Box<dyn Error + Send + Sync + 'static>>;
+
+    async fn get_ongoing_rfid_scanning_session(
+        &self,
+        charger_id: &str,
+    ) -> Result<Option<RfidScanSession>, Box<dyn Error + Send + Sync + 'static>>;
+
+    async fn save_scanned_tag_to_rfid_scan_session(
+        &self,
+        session_id: Uuid,
+        rfid_uid_hex: &str,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
+
+    async fn get_rfid_scanning_session(
+        &self,
+        session_id: Uuid,
+    ) -> Result<Option<RfidScanSession>, Box<dyn Error + Send + Sync + 'static>>;
 }

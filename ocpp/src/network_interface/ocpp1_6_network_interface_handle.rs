@@ -18,6 +18,7 @@ use rust_ocpp::v1_6::messages::remote_start_transaction::{
 use rust_ocpp::v1_6::messages::remote_stop_transaction::{
     RemoteStopTransactionRequest, RemoteStopTransactionResponse,
 };
+use rust_ocpp::v1_6::messages::reserve_now::{ReserveNowRequest, ReserveNowResponse};
 use rust_ocpp::v1_6::messages::reset::{ResetRequest, ResetResponse};
 use rust_ocpp::v1_6::messages::trigger_message::{TriggerMessageRequest, TriggerMessageResponse};
 
@@ -86,6 +87,14 @@ pub trait Ocpp16NetworkInterfaceHandle: NetworkInterfaceHandle {
         Result<ChangeAvailabilityResponse, OCPP1_6Error>,
         Box<dyn std::error::Error + Send + Sync + 'static>,
     >;
+
+    async fn send_reserve_now(
+        &self,
+        request: ReserveNowRequest,
+    ) -> Result<
+        Result<ReserveNowResponse, OCPP1_6Error>,
+        Box<dyn std::error::Error + Send + Sync + 'static>,
+    >;
 }
 #[cfg(test)]
 mockall::mock! {
@@ -100,6 +109,7 @@ mockall::mock! {
         async fn send_reset(&self, request: ResetRequest) -> Result<Result<ResetResponse, OCPP1_6Error>, Box<dyn Error + Send + Sync + 'static>>;
         async fn send_cancel_reservation(&self, request: CancelReservationRequest) -> Result<Result<CancelReservationResponse, OCPP1_6Error>, Box<dyn Error + Send + Sync + 'static>>;
         async fn send_change_availability(&self, request: ChangeAvailabilityRequest) -> Result<Result<ChangeAvailabilityResponse, OCPP1_6Error>, Box<dyn Error + Send + Sync + 'static>>;
+        async fn send_reserve_now(&self, request: ReserveNowRequest) -> Result<Result<ReserveNowResponse, OCPP1_6Error>, Box<dyn Error + Send + Sync + 'static>>;
     }
     #[async_trait::async_trait]
     impl NetworkInterfaceHandle for Ocpp16NetworkInterfaceHandle {

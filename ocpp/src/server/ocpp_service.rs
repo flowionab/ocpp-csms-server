@@ -7,11 +7,16 @@ use crate::ocpp_csms_server::{
     ChangeConnectorAvailabilityRequest, ChangeConnectorAvailabilityResponse,
     ChangeEvseAvailabilityRequest, ChangeEvseAvailabilityResponse,
     ChangeOcpp16configurationValueRequest, ChangeOcpp16configurationValueResponse,
-    ClearChargerCacheRequest, ClearChargerCacheResponse, RebootChargerRequest,
-    RebootChargerResponse, StartTransactionRequest, StartTransactionResponse,
+    ClearChargerCacheRequest, ClearChargerCacheResponse, CreateRfidScanSessionRequest,
+    CreateRfidScanSessionResponse, RebootChargerRequest, RebootChargerResponse,
+    RfidScanSessionStatus, StartTransactionRequest, StartTransactionResponse,
     StopTransactionRequest, StopTransactionResponse,
 };
+use chrono::{TimeDelta, Utc};
+use shared::ConnectorStatus;
+use std::ops::Add;
 use tonic::{Request, Response, Status};
+use tracing::warn;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -179,6 +184,50 @@ impl Ocpp for OcppService {
                 let transaction = lock.stop_transaction(transaction_id).await?;
                 Ok(Response::new(StopTransactionResponse {
                     transaction: Some(transaction.into()),
+                }))
+            }
+            None => Err(Status::not_found(
+                "A charger with this id is not connected to this instance",
+            )),
+        }
+    }
+
+    async fn create_rfid_scan_session(
+        &self,
+        request: Request<CreateRfidScanSessionRequest>,
+    ) -> Result<Response<CreateRfidScanSessionResponse>, Status> {
+        let payload = request.into_inner();
+        match self.charger_pool.get(&payload.charger_id).await {
+            Some(charger) => {
+                let mut lock = charger.lock().await;
+
+                for evse in &lock.data.evses {
+                    for connector in &evse.connectors {
+                        if connector.status != ConnectorStatus::Available {
+                            return Err(Status::failed_precondition(
+                                "cannot create RFID scan session while connector is not available",
+                            ));
+                        }
+                    }
+                }
+
+                let expires_at = Utc::now().add(TimeDelta::seconds(120));
+
+                lock.reserve_charger(expires_at).await?;
+
+                let session = lock
+                    .data_store
+                    .create_rfid_scan_session(&lock.id, expires_at)
+                    .await
+                    .map_err(|err| {
+                        warn!(error_message = %err, "Failed to create RFID scan session");
+                        Status::internal(format!("Failed to create RFID scan session: {}", err))
+                    })?;
+
+                Ok(Response::new(CreateRfidScanSessionResponse {
+                    session_id: session.id.to_string(),
+                    status: RfidScanSessionStatus::Active as i32,
+                    expires_at: session.expires_at.timestamp_millis() as u64,
                 }))
             }
             None => Err(Status::not_found(

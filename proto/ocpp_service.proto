@@ -8,6 +8,7 @@ import "change_ocpp_1_6_configuration_value.proto";
 import "clear_charger_cache.proto";
 import "stop_transaction.proto";
 import "start_transaction.proto";
+import "create_rfid_scan_session.proto";
 
 package ocpp_csms_server;
 
@@ -21,4 +22,5 @@ service Ocpp {
   rpc ClearChargerCache(ClearChargerCacheRequest) returns (ClearChargerCacheResponse) {}
   rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
   rpc StopTransaction(StopTransactionRequest) returns (StopTransactionResponse) {}
+  rpc CreateRfidScanSession(CreateRfidScanSessionRequest) returns (CreateRfidScanSessionResponse) {}
 }

@@ -9,6 +9,7 @@ import "change_evse_availability.proto";
 import "change_connector_availability.proto";
 import "cancel_outlet_reservation.proto";
 import "transaction.proto";
+import "create_rfid_scan_session.proto";
 
 package ocpp_csms_server;
 
@@ -26,6 +27,18 @@ service Api {
   rpc StartTransaction(StartTransactionRequest) returns (StartTransactionResponse) {}
   rpc StopTransaction(StopTransactionRequest) returns (StopTransactionResponse) {}
   rpc GetOngoingTransaction(GetOngoingTransactionRequest) returns (GetOngoingTransactionResponse) {}
+  rpc CreateRfidScanSession(CreateRfidScanSessionRequest) returns (CreateRfidScanSessionResponse) {}
+  rpc GetRfidScanSession(GetRfidScanSessionRequest) returns (GetRfidScanSessionResponse) {}
+}
+
+message GetRfidScanSessionRequest {
+  string session_id = 1;
+}
+
+message GetRfidScanSessionResponse {
+  RfidScanSessionStatus status = 1;
+  uint64 expires_at = 2;
+  optional string rfid_uid_hex = 3;
 }
 
 message GetOngoingTransactionRequest {

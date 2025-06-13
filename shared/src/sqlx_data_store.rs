@@ -1,5 +1,6 @@
 use crate::charger_data::ChargerData;
 use crate::data_store::DataStore;
+use crate::rfid_scan_session::RfidScanSession;
 use crate::transaction::Transaction;
 use crate::ChargerConnectionInfo;
 use chrono::{DateTime, Utc};
@@ -366,6 +367,81 @@ impl DataStore for SqlxDataStore<Postgres> {
                 SELECT * FROM transactions WHERE ocpp_transaction_id = $1
             ",
             transaction_ocpp_id
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| e.into())
+    }
+
+    async fn create_rfid_scan_session(
+        &self,
+        charger_id: &str,
+        expires_at: DateTime<Utc>,
+    ) -> Result<RfidScanSession, Box<dyn Error + Send + Sync + 'static>> {
+        let session = sqlx::query_as!(
+            RfidScanSession,
+            "
+            INSERT INTO rfid_scan_sessions (id, charger_id, created_at, expires_at)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, charger_id, created_at, expires_at, rfid_uid_hex, tag_scanned_at, ocpp_reservation_id
+        ",
+            Uuid::new_v4(),
+            charger_id,
+            Utc::now(),
+            expires_at
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(session)
+    }
+
+    async fn get_ongoing_rfid_scanning_session(
+        &self,
+        charger_id: &str,
+    ) -> Result<Option<RfidScanSession>, Box<dyn Error + Send + Sync + 'static>> {
+        let session = sqlx::query_as!(
+            RfidScanSession,
+            "
+                SELECT * FROM rfid_scan_sessions WHERE charger_id = $1 AND tag_scanned_at IS NULL AND expires_at > $2 LIMIT 1
+            ",
+            charger_id,
+            Utc::now()
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(session)
+    }
+
+    async fn save_scanned_tag_to_rfid_scan_session(
+        &self,
+        session_id: Uuid,
+        rfid_uid_hex: &str,
+    ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query!(
+            "
+                UPDATE rfid_scan_sessions SET rfid_uid_hex = $1, tag_scanned_at = $2 WHERE id = $3
+            ",
+            rfid_uid_hex,
+            Utc::now(),
+            session_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_rfid_scanning_session(
+        &self,
+        session_id: Uuid,
+    ) -> Result<Option<RfidScanSession>, Box<dyn Error + Send + Sync + 'static>> {
+        sqlx::query_as!(
+            RfidScanSession,
+            "
+                SELECT * FROM rfid_scan_sessions WHERE id = $1
+            ",
+            session_id
         )
         .fetch_optional(&self.pool)
         .await

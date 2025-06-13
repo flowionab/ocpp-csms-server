@@ -7,10 +7,12 @@ use crate::ocpp_csms_server::{
     ChangeEvseAvailabilityRequest, ChangeEvseAvailabilityResponse,
     ChangeOcpp16configurationValueRequest, ChangeOcpp16configurationValueResponse, Charger,
     ChargerSummary, ClearChargerCacheRequest, ClearChargerCacheResponse, CreateChargerRequest,
-    CreateChargerResponse, Evse, GetChargerRequest, GetChargerResponse, GetChargersRequest,
-    GetChargersResponse, GetOngoingTransactionRequest, GetOngoingTransactionResponse,
-    Ocpp16configuration, RebootChargerRequest, RebootChargerResponse, StartTransactionRequest,
-    StartTransactionResponse, StopTransactionRequest, StopTransactionResponse,
+    CreateChargerResponse, CreateRfidScanSessionRequest, CreateRfidScanSessionResponse, Evse,
+    GetChargerRequest, GetChargerResponse, GetChargersRequest, GetChargersResponse,
+    GetOngoingTransactionRequest, GetOngoingTransactionResponse, GetRfidScanSessionRequest,
+    GetRfidScanSessionResponse, Ocpp16configuration, RebootChargerRequest, RebootChargerResponse,
+    RfidScanSessionStatus, StartTransactionRequest, StartTransactionResponse,
+    StopTransactionRequest, StopTransactionResponse,
 };
 use shared::{ChargerConnectionInfo, DataStore};
 use std::str::FromStr;
@@ -285,6 +287,55 @@ impl Api for ApiService {
                     transaction: transaction.map(|transaction| transaction.into()),
                 })
             })
+    }
+
+    async fn create_rfid_scan_session(
+        &self,
+        request: Request<CreateRfidScanSessionRequest>,
+    ) -> Result<Response<CreateRfidScanSessionResponse>, Status> {
+        let payload = request.into_inner();
+        let mut client = self.get_client(&payload.charger_id).await?;
+        client.create_rfid_scan_session(payload).await
+    }
+
+    async fn get_rfid_scan_session(
+        &self,
+        request: Request<GetRfidScanSessionRequest>,
+    ) -> Result<Response<GetRfidScanSessionResponse>, Status> {
+        let payload = request.into_inner();
+        let session_id = Uuid::from_str(&payload.session_id)
+            .map_err(|_| Status::invalid_argument("Invalid session id"))?;
+
+        let session_opt = self
+            .data_store
+            .get_rfid_scanning_session(session_id)
+            .await
+            .map_err(|error| {
+                warn!(
+                    error_message = error.to_string(),
+                    "could not get RFID scan session"
+                );
+                Status::internal("Could not get RFID scan session")
+            })?;
+
+        match session_opt {
+            Some(session) => {
+                let status = if session.tag_scanned_at.is_some() {
+                    RfidScanSessionStatus::Completed
+                } else if session.expires_at > chrono::Utc::now() {
+                    RfidScanSessionStatus::Active
+                } else {
+                    RfidScanSessionStatus::Failed
+                };
+
+                Ok(Response::new(GetRfidScanSessionResponse {
+                    status: status as i32,
+                    expires_at: session.expires_at.timestamp_millis() as u64,
+                    rfid_uid_hex: session.rfid_uid_hex,
+                }))
+            }
+            None => Err(Status::not_found("RFID scan session not found")),
+        }
     }
 }
 

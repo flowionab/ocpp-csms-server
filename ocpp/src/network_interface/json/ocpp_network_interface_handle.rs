@@ -26,6 +26,7 @@ use rust_ocpp::v1_6::messages::remote_start_transaction::{
 use rust_ocpp::v1_6::messages::remote_stop_transaction::{
     RemoteStopTransactionRequest, RemoteStopTransactionResponse,
 };
+use rust_ocpp::v1_6::messages::reserve_now::{ReserveNowRequest, ReserveNowResponse};
 use rust_ocpp::v1_6::messages::reset::{ResetRequest, ResetResponse};
 use rust_ocpp::v1_6::messages::trigger_message::{TriggerMessageRequest, TriggerMessageResponse};
 use serde::de::DeserializeOwned;
@@ -274,6 +275,14 @@ impl Ocpp16NetworkInterfaceHandle for OcppNetworkInterfaceHandle {
         Box<dyn std::error::Error + Send + Sync + 'static>,
     > {
         self.send_ocpp_1_6("ChangeAvailability", request).await
+    }
+
+    async fn send_reserve_now(
+        &self,
+        request: ReserveNowRequest,
+    ) -> Result<Result<ReserveNowResponse, OCPP1_6Error>, Box<dyn Error + Send + Sync + 'static>>
+    {
+        self.send_ocpp_1_6("ReserveNow", request).await
     }
 }
 

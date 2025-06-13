@@ -1,9 +1,10 @@
 use crate::charger::charger_model::ChargerModel;
+use crate::charger::charger_ocpp1_6_request_receiver::CENTRAL_TAG;
 use crate::event::EventManager;
 use crate::network_interface::ProtocolHandle;
 use crate::ocpp_csms_server_client::csms_server_client_client::CsmsServerClientClient;
 use crate::server::map_ocpp1_6_error_to_status;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rand::Rng;
 use rust_ocpp::v1_6::messages::cancel_reservation::CancelReservationRequest;
 use rust_ocpp::v1_6::messages::change_availability::ChangeAvailabilityRequest;
@@ -470,6 +471,37 @@ impl Charger {
             ProtocolHandle::Ocpp2_0_1(_handle) => {
                 Err(Status::internal("We can't handle ocpp 2.0.1 yet"))
             }
+        }
+    }
+
+    pub async fn reserve_charger(&mut self, expiry_date: DateTime<Utc>) -> Result<(), Status> {
+        match &self.handle {
+            ProtocolHandle::Ocpp1_6(handle) => {
+                let response = handle
+                    .send_reserve_now(rust_ocpp::v1_6::messages::reserve_now::ReserveNowRequest {
+                        connector_id: 0,
+                        expiry_date,
+                        id_tag: CENTRAL_TAG.to_string(),
+                        parent_id_tag: None,
+                        reservation_id: 0,
+                    })
+                    .await
+                    .map_err(|error| {
+                        error!(
+                            error_message = error.to_string(),
+                            "Failed to reserve the charger due to internal error"
+                        );
+                        Status::internal("Failed to reserve the charger, due to internal error")
+                    })?
+                    .map_err(map_ocpp1_6_error_to_status)?;
+
+                if response.status == rust_ocpp::v1_6::types::ReservationStatus::Accepted {
+                    Ok(())
+                } else {
+                    Err(Status::cancelled("Charger could not be reserved"))
+                }
+            }
+            ProtocolHandle::Ocpp2_0_1(_) => Err(Status::internal("We can't handle ocpp 2.0.1 yet")),
         }
     }
 

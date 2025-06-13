@@ -15,6 +15,7 @@ mod evse_data;
 mod metric;
 mod ocpp1_6_configuration;
 mod phase_metric;
+mod rfid_scan_session;
 mod transaction;
 
 pub use self::charger_connection_info::ChargerConnectionInfo;

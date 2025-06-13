@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ocpp_csms_server;
+
+message CreateRfidScanSessionRequest {
+  string charger_id = 1;
+}
+
+message CreateRfidScanSessionResponse {
+  string session_id = 1;
+  RfidScanSessionStatus status = 2;
+  uint64 expires_at = 3;
+}
+
+enum RfidScanSessionStatus {
+  RFID_SCAN_SESSION_STATUS_UNSPECIFIED = 0;
+  RFID_SCAN_SESSION_STATUS_ACTIVE = 1;
+  RFID_SCAN_SESSION_STATUS_COMPLETED = 2;
+  RFID_SCAN_SESSION_STATUS_FAILED = 3;
+}
