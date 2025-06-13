@@ -17,4 +17,5 @@ pub use self::connector_type::ConnectorType;
 pub use self::evse::Evse;
 pub use self::reboot_type::RebootType;
 pub use self::rfid_scan_session::RfidScanSession;
+pub use self::rfid_scan_session_status::RfidScanSessionStatus;
 pub use self::transaction::Transaction;
