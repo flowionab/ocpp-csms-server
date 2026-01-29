@@ -1,5 +1,5 @@
 [package]
-edition = '2021'
+edition = '2024'
 name = "ocpp-csms-server-sdk"
 publish = true
 version.workspace = true
