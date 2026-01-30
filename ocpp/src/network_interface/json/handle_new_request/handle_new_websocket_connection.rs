@@ -1,10 +1,10 @@
+use crate::network_interface::OcppProtocol;
 use crate::network_interface::charger_factory::ChargerFactory;
 use crate::network_interface::json::handle_new_request::handle_websocket_message::handle_websocket_message;
 use crate::network_interface::json::ocpp_network_interface_handle::OcppNetworkInterfaceHandle;
 use crate::network_interface::network_interface_handle::NetworkInterfaceHandle;
 use crate::network_interface::ocpp1_6_request_receiver::Ocpp16RequestReceiver;
 use crate::network_interface::ocpp2_0_1_request_receiver::Ocpp2_0_1RequestReceiver;
-use crate::network_interface::OcppProtocol;
 use futures::{StreamExt, TryStreamExt};
 use poem::web::websocket::WebSocketStream;
 use shared::Config;

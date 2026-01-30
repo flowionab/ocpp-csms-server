@@ -2,8 +2,8 @@ use crate::network_interface::json::extract_password::decode_header_value::decod
 use crate::network_interface::json::extract_password::extract_raw_value_from_header_value::extract_raw_value_from_header_value;
 use crate::network_interface::json::extract_password::get_encoded_part::get_encoded_part;
 use crate::network_interface::json::extract_password::split_and_get_password::split_and_get_password;
-use poem::http::HeaderValue;
 use poem::Response;
+use poem::http::HeaderValue;
 
 #[allow(clippy::result_large_err)]
 pub fn parse_authorization_header_value(header: &HeaderValue) -> Result<String, Response> {

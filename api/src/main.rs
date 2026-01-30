@@ -1,11 +1,7 @@
-use crate::start_server::start_server;
-use shared::{configure_tracing, SqlxDataStore};
-use sqlx::postgres::PgPoolOptions;
+use shared::configure_tracing;
+use shared::data_store::MongoDataStore;
 use std::env;
 use tracing::{info, warn};
-
-mod api_service;
-mod start_server;
 
 pub mod ocpp_csms_server {
     tonic::include_proto!("ocpp_csms_server");
@@ -18,18 +14,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
     info!("starting up api server");
 
     info!("connecting to database");
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
-        warn!("No DATABASE_URL env var provided, attempting to connect to database at localhost");
-        "postgres://postgres:password@localhost/postgres".to_string()
+    let mongo_connection_uri = env::var("MONGO_CONNECTION_URI").unwrap_or_else(|_| {
+        warn!("No MONGO_CONNECTION_URI env var provided, attempting to connect to database at localhost");
+        "mongodb://localhost:27017".to_string()
     });
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
-        .await?;
 
-    let data_store = Box::new(SqlxDataStore::setup(pool).await?);
-
-    start_server(data_store).await?;
+    let _data_store = Box::new(MongoDataStore::setup(mongo_connection_uri).await?);
 
     Ok(())
 }

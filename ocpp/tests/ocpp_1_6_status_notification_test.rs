@@ -5,8 +5,8 @@ use rust_ocpp::v1_6::messages::status_notification::StatusNotificationRequest;
 mod setup_new_client;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn it_shoud_send_status_notification_successfully(
-) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+async fn it_shoud_send_status_notification_successfully()
+-> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let (client, _) = setup_new_ocpp1_6_client().await?;
 
     client

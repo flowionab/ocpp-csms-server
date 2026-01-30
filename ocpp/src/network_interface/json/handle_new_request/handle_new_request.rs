@@ -9,7 +9,7 @@ use crate::network_interface::ocpp1_6_request_receiver::Ocpp16RequestReceiver;
 use crate::network_interface::ocpp2_0_1_request_receiver::Ocpp2_0_1RequestReceiver;
 use crate::network_interface::protocol_handle::ProtocolHandle;
 use crate::network_interface::{
-    Ocpp16NetworkInterfaceHandle, Ocpp2_0_1NetworkInterfaceHandle, OcppProtocol,
+    Ocpp2_0_1NetworkInterfaceHandle, Ocpp16NetworkInterfaceHandle, OcppProtocol,
 };
 use poem::http::{HeaderMap, HeaderValue};
 use poem::web::websocket::WebSocket;

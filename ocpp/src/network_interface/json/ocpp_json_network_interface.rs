@@ -7,11 +7,11 @@ use crate::network_interface::network_interface::NetworkInterface;
 use crate::network_interface::ocpp1_6_request_receiver::Ocpp16RequestReceiver;
 use crate::network_interface::ocpp2_0_1_request_receiver::Ocpp2_0_1RequestReceiver;
 use poem::listener::TcpListener;
-use poem::{get, EndpointExt, Route, Server};
+use poem::{EndpointExt, Route, Server, get};
 use shared::Config;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 use tracing::info;
 
 pub struct OcppJsonNetworkInterface<T> {
@@ -23,13 +23,13 @@ pub struct OcppJsonNetworkInterface<T> {
 }
 
 impl<
-        T: Send
-            + Sync
-            + AuthenticationHandler
-            + Ocpp16RequestReceiver
-            + Ocpp2_0_1RequestReceiver
-            + 'static,
-    > OcppJsonNetworkInterface<T>
+    T: Send
+        + Sync
+        + AuthenticationHandler
+        + Ocpp16RequestReceiver
+        + Ocpp2_0_1RequestReceiver
+        + 'static,
+> OcppJsonNetworkInterface<T>
 {
     pub fn new<F: ChargerFactory<T> + Send + Sync + 'static>(
         config: &Arc<Config>,

@@ -1,5 +1,5 @@
-use poem::http::StatusCode;
 use poem::Response;
+use poem::http::StatusCode;
 use tracing::log::warn;
 
 #[allow(clippy::result_large_err)]
@@ -7,14 +7,18 @@ pub fn get_encoded_part(value: &str) -> Result<String, Response> {
     let splits = value.split(" ").collect::<Vec<_>>();
     match splits.first() {
         None => {
-            warn!("Authorization header was provided, but the content should start with Basic and have base64 encoded credentials");
+            warn!(
+                "Authorization header was provided, but the content should start with Basic and have base64 encoded credentials"
+            );
             return Err(Response::builder().status(StatusCode::BAD_REQUEST).body(
                 "Authorization header was provided, but the content should start with Basic and have base64 encoded credentials".to_string(),
             ));
         }
         Some(val) => {
             if *val != "Basic" {
-                warn!("Authorization header was provided, but the only supported credential type is Basic");
+                warn!(
+                    "Authorization header was provided, but the only supported credential type is Basic"
+                );
                 return Err(Response::builder().status(StatusCode::BAD_REQUEST).body(
                     "Authorization header was provided, but the only supported credential type is Basic".to_string(),
                 ));

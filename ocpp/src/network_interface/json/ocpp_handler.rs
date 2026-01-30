@@ -7,7 +7,7 @@ use crate::network_interface::ocpp2_0_1_request_receiver::Ocpp2_0_1RequestReceiv
 use poem::http::HeaderMap;
 use poem::web::websocket::WebSocket;
 use poem::web::{Data, Path};
-use poem::{handler, Response};
+use poem::{Response, handler};
 use shared::Config;
 use std::sync::Arc;
 use tracing::info;
@@ -33,7 +33,7 @@ pub async fn ocpp_handler<
     Path(id): Path<String>,
 ) -> Response {
     info!(charger_id = id, "receiving connection from charger");
-    handle_new_request::<T>(&data.0 .0, &data.0 .1, ws, headers, id, &data.0 .2)
+    handle_new_request::<T>(&data.0.0, &data.0.1, ws, headers, id, &data.0.2)
         .await
         .unwrap_or_else(|r| r)
 }

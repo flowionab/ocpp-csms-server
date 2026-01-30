@@ -1,4 +1,3 @@
-pub mod event;
 mod ocpp_api_client;
 mod start_client_server;
 pub mod types;

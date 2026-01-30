@@ -1,4 +1,4 @@
-use ocpp_csms_server_sdk::event::EventPayload;
+use crate::event::EventPayload;
 use std::fmt;
 
 #[async_trait::async_trait]

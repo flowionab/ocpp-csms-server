@@ -1,10 +1,10 @@
+use crate::network_interface::OcppProtocol;
 use crate::network_interface::json::handle_new_request::ocpp1_6::perform_ocpp_1_6_call::perform_ocpp_1_6_call;
 use crate::network_interface::json::handle_new_request::{
-    OCPP_CALLS, OCPP_CALL_RESULT, OCPP_ERROR,
+    OCPP_CALL_RESULT, OCPP_CALLS, OCPP_ERROR,
 };
 use crate::network_interface::json::ocpp_network_interface_handle::OcppNetworkInterfaceHandle;
 use crate::network_interface::ocpp1_6_request_receiver::Ocpp16RequestReceiver;
-use crate::network_interface::OcppProtocol;
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use serde_json::Value;
 use shared::Config;

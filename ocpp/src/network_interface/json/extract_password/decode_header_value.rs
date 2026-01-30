@@ -1,7 +1,7 @@
-use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use poem::http::StatusCode;
+use base64::prelude::BASE64_STANDARD;
 use poem::Response;
+use poem::http::StatusCode;
 use std::str::from_utf8;
 use tracing::log::warn;
 

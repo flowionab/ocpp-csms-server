@@ -1,8 +1,8 @@
-use crate::charger_data::ChargerData;
-use crate::data_store::DataStore;
-use crate::rfid_scan_session::RfidScanSession;
-use crate::transaction::Transaction;
 use crate::ChargerConnectionInfo;
+use crate::charger_data::ChargerData;
+use crate::data::rfid_scan_session::RfidScanSession;
+use crate::data::transaction::Transaction;
+use crate::data_store::DataStore;
 use chrono::{DateTime, Utc};
 use sqlx::{FromRow, Pool, Postgres};
 use std::error::Error;

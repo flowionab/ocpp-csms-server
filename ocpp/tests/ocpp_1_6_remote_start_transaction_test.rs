@@ -1,5 +1,5 @@
-use crate::ocpp_csms_server::ocpp_client::OcppClient;
 use crate::ocpp_csms_server::StartTransactionRequest;
+use crate::ocpp_csms_server::ocpp_client::OcppClient;
 use crate::setup_new_client::setup_new_ocpp1_6_client;
 use rust_ocpp::v1_6::messages::remote_start_transaction::RemoteStartTransactionResponse;
 use rust_ocpp::v1_6::types::RemoteStartStopStatus;
@@ -12,8 +12,8 @@ pub mod ocpp_csms_server {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn calling_remote_start_transaction_should_work(
-) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+async fn calling_remote_start_transaction_should_work()
+-> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let (client, username) = setup_new_ocpp1_6_client().await?;
     let mut grpc_client = OcppClient::connect("http://[::1]:50051").await?;
 

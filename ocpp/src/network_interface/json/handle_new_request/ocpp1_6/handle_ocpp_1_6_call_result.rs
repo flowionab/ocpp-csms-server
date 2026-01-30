@@ -1,5 +1,5 @@
-use crate::network_interface::json::ocpp_network_interface_handle::OcppNetworkInterfaceHandle;
 use crate::network_interface::OcppProtocol;
+use crate::network_interface::json::ocpp_network_interface_handle::OcppNetworkInterfaceHandle;
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::info;

@@ -19,6 +19,7 @@ opentelemetry_sdk = { version = "0.27.1", features = ["rt-tokio"] }
 tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
 opentelemetry-otlp = "0.27.0"
 tracing-opentelemetry = "0.28.0"
-rust-ocpp = { version = "3.0.0", features = ["v2_0_1", "v1_6"] }
+rust-ocpp = { version = "3.0.4", features = ["v2_0_1", "v1_6"] }
 toml = "0.8.19"
 strum = { version = "0.27.1", features = ["derive"] }
+mongodb = "3.5.0"

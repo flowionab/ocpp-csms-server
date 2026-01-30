@@ -1,5 +1,5 @@
-use poem::http::StatusCode;
 use poem::Response;
+use poem::http::StatusCode;
 use tracing::log::warn;
 
 #[allow(clippy::result_large_err)]
@@ -7,7 +7,9 @@ pub fn split_and_get_password(value: &str) -> Result<String, Response> {
     let splits = value.split(":").collect::<Vec<_>>();
     match splits.get(1) {
         None => {
-            warn!("Authorization header was provided, but the content was not correct formatted, it should have <username>:<password> layout");
+            warn!(
+                "Authorization header was provided, but the content was not correct formatted, it should have <username>:<password> layout"
+            );
             Err(Response::builder().status(StatusCode::BAD_REQUEST).body(
                 "Authorization header was provided, but the content was not correct formatted, it should have <username>:<password> layout".to_string(),
             ))

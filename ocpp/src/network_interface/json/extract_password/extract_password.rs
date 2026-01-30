@@ -1,7 +1,7 @@
 use crate::network_interface::json::extract_password::parse_authorization_header_value::parse_authorization_header_value;
-use poem::http::header::AUTHORIZATION;
-use poem::http::HeaderMap;
 use poem::Response;
+use poem::http::HeaderMap;
+use poem::http::header::AUTHORIZATION;
 use tracing::info;
 
 #[allow(clippy::result_large_err)]

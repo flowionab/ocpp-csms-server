@@ -2,7 +2,7 @@ use crate::charger::ocpp1_6::update_metric::update_metric;
 use chrono::{DateTime, Utc};
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use rust_ocpp::v1_6::types::Phase;
-use shared::ChargerData;
+use shared::data::ChargerData;
 
 pub fn update_evse_ampere_from_metric_request(
     data: &mut ChargerData,
@@ -33,7 +33,7 @@ mod tests {
     use super::*;
     use chrono::Utc;
     use rust_ocpp::v1_6::types::Phase;
-    use shared::{ChargerData, EvseData, PhaseMetric};
+    use shared::data::data::{ChargerData, EvseData, PhaseMetric};
 
     fn setup_charger_with_evse(connector_id: u32) -> ChargerData {
         let mut charger = ChargerData::default();

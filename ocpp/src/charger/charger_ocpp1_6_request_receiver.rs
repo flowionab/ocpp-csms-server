@@ -1,6 +1,11 @@
+use crate::charger::Charger;
 use crate::charger::charger_model::ChargerModel;
 use crate::charger::ocpp1_6::{create_transaction_id, update_charger_from_meter_values_request};
-use crate::charger::Charger;
+use crate::event;
+use crate::event::{
+    EventPayload, EvseInfo, TransactionEvent, TransactionEventTriggerReason, TransactionEventType,
+    TransactionInfo, TransactionStartedEvent, TransactionStoppedEvent,
+};
 use crate::network_interface::Ocpp16RequestReceiver;
 use crate::ocpp_csms_server_client;
 use crate::ocpp_csms_server_client::authorize_request::Authorization;
@@ -8,13 +13,8 @@ use crate::ocpp_csms_server_client::authorize_response;
 use bcrypt::DEFAULT_COST;
 use chrono::{DateTime, TimeZone, Utc};
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
-use ocpp_csms_server_sdk::event;
-use ocpp_csms_server_sdk::event::{
-    EventPayload, EvseInfo, TransactionEvent, TransactionEventTriggerReason, TransactionEventType,
-    TransactionInfo, TransactionStartedEvent, TransactionStoppedEvent,
-};
-use rand::distr::Alphanumeric;
 use rand::Rng;
+use rand::distr::Alphanumeric;
 use rust_ocpp::v1_6::messages::authorize::{AuthorizeRequest, AuthorizeResponse};
 use rust_ocpp::v1_6::messages::boot_notification::{
     BootNotificationRequest, BootNotificationResponse,
@@ -47,7 +47,7 @@ use rust_ocpp::v1_6::types::{
     Measurand, MessageTrigger, RegistrationStatus, ResetRequestStatus, ResetResponseStatus,
     TriggerMessageStatus,
 };
-use shared::{ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Configuration};
+use shared::data::{ConnectorData, ConnectorStatus, ConnectorType, EvseData, Ocpp1_6Configuration};
 use std::error::Error;
 use tracing::{error, info, warn};
 use uuid::Uuid;
@@ -464,7 +464,9 @@ impl Ocpp16RequestReceiver for Charger {
             }
             if !self.authenticated {
                 if let Some(ChargerModel::Easee(_)) = self.model() {
-                    warn!("Easee chargers uses a master password, it will be matched during next reconnect");
+                    warn!(
+                        "Easee chargers uses a master password, it will be matched during next reconnect"
+                    );
                     self.handle.disconnect().await?;
                 } else {
                     info!("Generating new password for charger");

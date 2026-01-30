@@ -1,4 +1,4 @@
-use crate::network_interface::{Ocpp16NetworkInterfaceHandle, Ocpp2_0_1NetworkInterfaceHandle};
+use crate::network_interface::{Ocpp2_0_1NetworkInterfaceHandle, Ocpp16NetworkInterfaceHandle};
 use std::sync::Arc;
 
 #[derive(Clone)]

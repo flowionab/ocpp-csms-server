@@ -1,9 +1,9 @@
+use crate::network_interface::OcppProtocol;
 use crate::network_interface::json::handle_new_request::ocpp1_6::handle_ocpp_1_6_websocket_message;
 use crate::network_interface::json::handle_new_request::ocpp2_0_1::handle_ocpp_2_0_1_websocket_message;
 use crate::network_interface::json::ocpp_network_interface_handle::OcppNetworkInterfaceHandle;
 use crate::network_interface::ocpp1_6_request_receiver::Ocpp16RequestReceiver;
 use crate::network_interface::ocpp2_0_1_request_receiver::Ocpp2_0_1RequestReceiver;
-use crate::network_interface::OcppProtocol;
 use poem::web::websocket::Message;
 use poem::web::websocket::Message::Text;
 use shared::Config;

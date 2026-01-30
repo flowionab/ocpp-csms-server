@@ -1,7 +1,7 @@
 use futures::future::join3;
 use ocpp_client::ocpp_1_6::OCPP1_6Client;
 use ocpp_client::ocpp_2_0_1::OCPP2_0_1Client;
-use ocpp_client::{connect_1_6, connect_2_0_1, ConnectOptions};
+use ocpp_client::{ConnectOptions, connect_1_6, connect_2_0_1};
 use rust_ocpp::v2_0_1::datatypes::charging_station_type::ChargingStationType;
 use rust_ocpp::v2_0_1::enumerations::boot_reason_enum_type::BootReasonEnumType;
 use rust_ocpp::v2_0_1::messages::get_base_report::GetBaseReportResponse;
@@ -10,8 +10,8 @@ use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
 
-pub async fn setup_new_ocpp1_6_client(
-) -> Result<(OCPP1_6Client, String), Box<dyn std::error::Error + Send + Sync + 'static>> {
+pub async fn setup_new_ocpp1_6_client()
+-> Result<(OCPP1_6Client, String), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let username = Uuid::new_v4().to_string();
     let client = connect_1_6(&format!("ws://localhost:3001/{}", username), None).await?;
 
@@ -93,8 +93,8 @@ pub async fn setup_new_ocpp1_6_client(
 }
 
 #[allow(dead_code)]
-pub async fn setup_new_ocpp2_0_1_client(
-) -> Result<(OCPP2_0_1Client, String), Box<dyn std::error::Error + Send + Sync + 'static>> {
+pub async fn setup_new_ocpp2_0_1_client()
+-> Result<(OCPP2_0_1Client, String), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let username = Uuid::new_v4().to_string();
     let client = connect_2_0_1(&format!("ws://localhost:3001/{}", username), None).await?;
 

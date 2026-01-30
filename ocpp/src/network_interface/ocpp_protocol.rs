@@ -34,9 +34,9 @@ impl From<ProtocolHandle> for OcppProtocol {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::network_interface::ProtocolHandle;
     use crate::network_interface::ocpp1_6_network_interface_handle::MockOcpp16NetworkInterfaceHandle;
     use crate::network_interface::ocpp2_0_1_network_interface_handle::MockOcpp2_0_1NetworkInterfaceHandle;
-    use crate::network_interface::ProtocolHandle;
     use std::sync::Arc;
 
     #[test]

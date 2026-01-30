@@ -1,6 +1,6 @@
 use crate::charger::Charger;
 use lazy_static::lazy_static;
-use prometheus::{register_gauge, Gauge};
+use prometheus::{Gauge, register_gauge};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 use std::time::Duration;

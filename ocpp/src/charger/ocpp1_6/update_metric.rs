@@ -1,7 +1,7 @@
 use crate::charger::ocpp1_6::parse_metric_value::parse_metric_value;
 use chrono::{DateTime, Utc};
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
-use shared::Metric;
+use shared::data::Metric;
 
 pub fn update_metric(
     metric: &mut Metric<f32>,
@@ -19,7 +19,7 @@ pub fn update_metric(
 mod tests {
     use super::*;
     use chrono::{TimeZone, Utc};
-    use shared::Metric;
+    use shared::data::Metric;
 
     fn metric_with_value_and_time(val: f32, ts: i64) -> Metric<f32> {
         Metric {

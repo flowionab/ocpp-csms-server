@@ -19,4 +19,4 @@ lazy_static! {
 
 pub use self::handle_new_request::handle_new_request;
 use lazy_static::lazy_static;
-use prometheus::{register_histogram_vec, HistogramVec};
+use prometheus::{HistogramVec, register_histogram_vec};

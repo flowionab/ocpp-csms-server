@@ -1,8 +1,8 @@
-use crate::charger::charger_model::ChargerModel;
 use crate::charger::Charger;
+use crate::charger::charger_model::ChargerModel;
 use crate::network_interface::json::AuthenticationHandler;
-use poem::http::StatusCode;
 use poem::Response;
+use poem::http::StatusCode;
 use tracing::{error, warn};
 
 #[async_trait::async_trait]
@@ -83,7 +83,10 @@ impl AuthenticationHandler for Charger {
             None => {
                 self.authenticated = false;
                 if password.is_some() {
-                    warn!(charger_id = self.id.to_string(), "The charger does have existing credentials, but it has not been onboarded yet to our system, ignoring the credentials for now...")
+                    warn!(
+                        charger_id = self.id.to_string(),
+                        "The charger does have existing credentials, but it has not been onboarded yet to our system, ignoring the credentials for now..."
+                    )
                 }
                 Ok(())
             }

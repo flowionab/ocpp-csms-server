@@ -1,10 +1,9 @@
-[Introduction]()
+[Introduction](./introduction.md)
 
 # User Guide
 
 - [Overview]()
 - [Helm Chart]()
-- [Chapter 1](./chapter_1.md)
 
 # API Service
 

@@ -1,6 +1,5 @@
-use crate::event::amqp_event_handler::AmqpEventHandler;
+use crate::event::EventPayload;
 use crate::event::event_handler::EventHandler;
-use ocpp_csms_server_sdk::event::EventPayload;
 use shared::Config;
 use std::sync::Arc;
 use tracing::info;
@@ -17,13 +16,6 @@ impl EventManager {
         info!("setting up event listeners");
         let mut event_handlers = Vec::new();
 
-        if let Some(amqp) = &config.amqp {
-            if amqp.enabled {
-                event_handlers
-                    .push(Box::new(AmqpEventHandler::setup().await?) as Box<dyn EventHandler>);
-            }
-        }
-
         if event_handlers.is_empty() {
             info!("no event handlers configured");
         }
@@ -34,8 +26,6 @@ impl EventManager {
     }
 
     pub async fn send_event(&self, payload: EventPayload) {
-        for handler in self.event_handlers.iter() {
-            handler.send_event(payload.clone()).await;
-        }
+        unimplemented!()
     }
 }

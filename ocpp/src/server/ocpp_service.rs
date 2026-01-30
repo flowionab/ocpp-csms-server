@@ -13,7 +13,7 @@ use crate::ocpp_csms_server::{
     StopTransactionRequest, StopTransactionResponse,
 };
 use chrono::{TimeDelta, Utc};
-use shared::ConnectorStatus;
+use shared::data::ConnectorStatus;
 use std::ops::Add;
 use tonic::{Request, Response, Status};
 use tracing::warn;
@@ -235,8 +235,8 @@ impl Ocpp for OcppService {
     }
 }
 
-impl From<shared::Transaction> for crate::ocpp_csms_server::Transaction {
-    fn from(value: shared::Transaction) -> Self {
+impl From<shared::data::Transaction> for crate::ocpp_csms_server::Transaction {
+    fn from(value: shared::data::Transaction) -> Self {
         Self {
             id: value.id.to_string(),
             charger_id: value.charger_id,
@@ -249,8 +249,8 @@ impl From<shared::Transaction> for crate::ocpp_csms_server::Transaction {
     }
 }
 
-impl From<shared::RfidScanSession> for crate::ocpp_csms_server::RfidScanSession {
-    fn from(session: shared::RfidScanSession) -> Self {
+impl From<shared::data::RfidScanSession> for crate::ocpp_csms_server::RfidScanSession {
+    fn from(session: shared::data::RfidScanSession) -> Self {
         let status = if session.tag_scanned_at.is_some() {
             RfidScanSessionStatus::Completed
         } else if session.expires_at > chrono::Utc::now() {

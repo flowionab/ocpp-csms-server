@@ -1,8 +1,9 @@
 #![allow(clippy::module_inception)]
 
 mod charger;
-mod event;
 mod server;
+
+mod event;
 
 mod network_interface;
 
@@ -11,12 +12,12 @@ use crate::event::EventManager;
 use crate::network_interface::json::OcppJsonNetworkInterface;
 use crate::ocpp_csms_server_client::csms_server_client_client::CsmsServerClientClient;
 use crate::server::start_server;
-use shared::{configure_tracing, read_config, SqlxDataStore};
-use sqlx::postgres::PgPoolOptions;
+use shared::data_store::MongoDataStore;
+use shared::{configure_tracing, read_config};
 use std::env;
 use std::sync::Arc;
 use tokio::try_join;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 pub mod ocpp_csms_server {
     tonic::include_proto!("ocpp_csms_server");
@@ -49,25 +50,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
     let data_store = {
         info!("connecting to database");
 
-        let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+        let mongo_connection_uri = env::var("MONGO_CONNECTION_URI").unwrap_or_else(|_| {
             warn!(
-                "No DATABASE_URL env var provided, attempting to connect to database at localhost"
+                "No MONGO_CONNECTION_URI env var provided, attempting to connect to database at localhost"
             );
-            "postgres://postgres:password@localhost/ocpp_csms_server".to_string()
+            "mongodb://localhost:27017".to_string()
         });
-        let pool = PgPoolOptions::new()
-            .max_connections(5)
-            .acquire_timeout(std::time::Duration::from_secs(5))
-            .connect(&database_url)
-            .await
-            .inspect_err(|e| {
-                error!(
-                    error_message = e.to_string(),
-                    "Could not connect to database"
-                );
-            })?;
 
-        Arc::new(SqlxDataStore::setup(pool).await?)
+        Arc::new(MongoDataStore::setup(mongo_connection_uri).await?)
     };
 
     let csms_server_client = match config.client_url() {
@@ -91,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     let charger_factory = ChargerFactory::new(
         Arc::clone(&config),
-        Arc::clone(&data_store) as Arc<dyn shared::DataStore + Send + Sync>,
+        Arc::clone(&data_store) as Arc<dyn shared::data_store::DataStore + Send + Sync>,
         &node_address,
         easee_master_password,
         &event_manager,

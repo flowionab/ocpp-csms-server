@@ -1,5 +1,5 @@
 use crate::network_interface::json::validate_protocol::select_protocol::select_protocol;
-use poem::{http::StatusCode, Response};
+use poem::{Response, http::StatusCode};
 use tracing::warn;
 
 #[allow(clippy::result_large_err)]

@@ -1,7 +1,7 @@
+use crate::network_interface::OcppProtocol;
 use crate::network_interface::json::validate_protocol::extract_protocol_header::extract_protocol_header;
 use crate::network_interface::json::validate_protocol::select_protocol_and_handle_response::select_protocol_and_handle_response;
-use crate::network_interface::OcppProtocol;
-use poem::{http::HeaderMap, Response};
+use poem::{Response, http::HeaderMap};
 
 #[allow(clippy::result_large_err)]
 pub fn validate_protocol(headers: &HeaderMap) -> Result<OcppProtocol, Response> {

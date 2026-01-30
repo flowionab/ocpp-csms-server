@@ -1,6 +1,6 @@
+use crate::network_interface::OcppProtocol;
 use crate::network_interface::json::handle_new_request::ocpp1_6::parse_ocpp_1_6_error_payload::parse_ocpp_1_6_error_payload;
 use crate::network_interface::json::ocpp_network_interface_handle::OcppNetworkInterfaceHandle;
-use crate::network_interface::OcppProtocol;
 use std::sync::Arc;
 use tracing::warn;
 

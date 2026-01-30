@@ -16,11 +16,12 @@ use rust_ocpp::v1_6::types::{
     AvailabilityStatus, AvailabilityType, CancelReservationStatus, ConfigurationStatus,
     RemoteStartStopStatus, ResetRequestStatus, ResetResponseStatus,
 };
-use shared::{ChargerData, Config};
-use shared::{DataStore, Transaction};
+use shared::Config;
+use shared::data::{ChargerData, Transaction};
+use shared::data_store::DataStore;
 use std::sync::Arc;
-use tonic::transport::Channel;
 use tonic::Status;
+use tonic::transport::Channel;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 

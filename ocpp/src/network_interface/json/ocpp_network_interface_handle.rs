@@ -1,9 +1,9 @@
 use crate::network_interface::network_interface_handle::NetworkInterfaceHandle;
 use crate::network_interface::{
-    Ocpp16NetworkInterfaceHandle, Ocpp2_0_1NetworkInterfaceHandle, OcppProtocol,
+    Ocpp2_0_1NetworkInterfaceHandle, Ocpp16NetworkInterfaceHandle, OcppProtocol,
 };
-use futures::stream::SplitSink;
 use futures::SinkExt;
+use futures::stream::SplitSink;
 use ocpp_client::ocpp_1_6::OCPP1_6Error;
 use ocpp_client::ocpp_2_0_1::OCPP2_0_1Error;
 use poem::web::websocket::Message::Text;
@@ -29,8 +29,8 @@ use rust_ocpp::v1_6::messages::remote_stop_transaction::{
 use rust_ocpp::v1_6::messages::reserve_now::{ReserveNowRequest, ReserveNowResponse};
 use rust_ocpp::v1_6::messages::reset::{ResetRequest, ResetResponse};
 use rust_ocpp::v1_6::messages::trigger_message::{TriggerMessageRequest, TriggerMessageResponse};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use shared::Config;
 use std::collections::BTreeMap;
@@ -38,7 +38,7 @@ use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::oneshot::Sender;
-use tokio::sync::{oneshot, MappedMutexGuard, Mutex, MutexGuard};
+use tokio::sync::{MappedMutexGuard, Mutex, MutexGuard, oneshot};
 use tokio::time::timeout;
 use tracing::{info, warn};
 use uuid::Uuid;
